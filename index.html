@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>La Dulcería — Catálogo</title>
+<style>
+:root {
+	--fondo: #faf7f2;
+	--tarjeta: #ffffff;
+	--texto: #2b2118;
+	--suave: #7a6a5a;
+	--borde: #e8ddd0;
+	--acento: #8b5e34;
+	--wa: #25d366;
+	--sombra: 0 1px 3px rgba(43, 33, 24, .08), 0 4px 12px rgba(43, 33, 24, .04);
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--fondo: #1a1613;
+		--tarjeta: #241e1a;
+		--texto: #f0e8df;
+		--suave: #a89684;
+		--borde: #3a2f27;
+		--acento: #d9a066;
+		--sombra: 0 1px 3px rgba(0, 0, 0, .3), 0 4px 12px rgba(0, 0, 0, .2);
+	}
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0;
+	padding: 24px 16px 48px;
+	background: var(--fondo);
+	color: var(--texto);
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	line-height: 1.5;
+	-webkit-text-size-adjust: 100%;
+}
+.envoltorio { max-width: 1100px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 28px; }
+header h1 { font-size: 1.75rem; margin: 0 0 4px; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--suave); font-size: .95rem; }
+.controles { max-width: 460px; margin: 0 auto 20px; }
+#buscador {
+	width: 100%;
+	padding: 12px 16px;
+	font-size: 16px;
+	font-family: inherit;
+	border: 1px solid var(--borde);
+	border-radius: 10px;
+	background: var(--tarjeta);
+	color: var(--texto);
+}
+#buscador:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px; }
+.filtro {
+	padding: 7px 15px;
+	font-size: .875rem;
+	font-family: inherit;
+	border: 1px solid var(--borde);
+	border-radius: 999px;
+	background: var(--tarjeta);
+	color: var(--texto);
+	cursor: pointer;
+	min-height: 38px;
+}
+.filtro[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: #fff; }
+.grilla { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 600px) { .grilla { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .grilla { grid-template-columns: repeat(3, 1fr); } }
+.tarjeta {
+	background: var(--tarjeta);
+	border: 1px solid var(--borde);
+	border-radius: 14px;
+	overflow: hidden;
+	box-shadow: var(--sombra);
+	display: flex;
+	flex-direction: column;
+}
+/*
+ * Sin esto, el buscador y los filtros no ocultan nada.
+ *
+ * El navegador aplica `display: none` a `[hidden]` desde su hoja por defecto, pero cualquier
+ * `display` declarado en una hoja de autor le gana — y `.tarjeta` arriba declara `display: flex`.
+ * El JS marca `t.hidden = true` correctamente y la tarjeta sigue a la vista.
+ *
+ * Va con `!important` porque tiene que ganarle a `.tarjeta` y a cualquier regla futura: ocultar
+ * es una decisión de estado, no de estilo.
+ */
+[hidden] { display: none !important; }
+.tarjeta img { width: 100%; height: 200px; object-fit: cover; display: block; background: var(--borde); }
+.cuerpo { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.cuerpo h2 { font-size: 1.05rem; margin: 0; }
+.cuerpo .desc { margin: 0; color: var(--suave); font-size: .9rem; flex: 1; }
+.precio { font-size: 1.3rem; font-weight: 600; margin: 0; }
+.pedir {
+	display: block;
+	text-align: center;
+	padding: 11px;
+	background: var(--wa);
+	color: #fff;
+	text-decoration: none;
+	border-radius: 9px;
+	font-weight: 600;
+	font-size: .9rem;
+	min-height: 44px;
+}
+.vacio { text-align: center; color: var(--suave); padding: 56px 16px; }
+footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="envoltorio">
+	<header>
+		<h1>La Dulcería</h1>
+		<p>Mirá lo que tenemos y sus precios</p>
+	</header>
+	<div class="controles">
+			<input id="buscador" type="search" placeholder="Buscar…" aria-label="Buscar en el catálogo" autocomplete="off">
+		</div>
+	<div class="filtros">
+			<button class="filtro" aria-pressed="true">Todas</button>
+			<button class="filtro" data-categoria="Alfajores" aria-pressed="false">Alfajores</button>
+			<button class="filtro" data-categoria="Budines" aria-pressed="false">Budines</button>
+			<button class="filtro" data-categoria="Tartas" aria-pressed="false">Tartas</button>
+			<button class="filtro" data-categoria="Tortas" aria-pressed="false">Tortas</button>
+		</div>
+	<div class="grilla">
+			<article class="tarjeta" data-busqueda="ALFAJORES CHIP GRANDES Alfajores grandes de masa con chips de chocolate, rellenos de dulce de leche." data-categoria="Alfajores">
+			
+			<div class="cuerpo">
+				<h2>ALFAJORES CHIP GRANDES</h2>
+				<p class="desc">Alfajores grandes de masa con chips de chocolate, rellenos de dulce de leche.</p>
+				<p class="precio">$ 1.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CHIP%20GRANDES" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="ALFAJORES CHOCO GRANDES Alfajores grandes de chocolate rellenos de dulce de leche." data-categoria="Alfajores">
+			
+			<div class="cuerpo">
+				<h2>ALFAJORES CHOCO GRANDES</h2>
+				<p class="desc">Alfajores grandes de chocolate rellenos de dulce de leche.</p>
+				<p class="precio">$ 1.300,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CHOCO%20GRANDES" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="ALFAJORES CON CHIP Alfajores de masa con chips de chocolate y relleno de dulce de leche." data-categoria="Alfajores">
+			
+			<div class="cuerpo">
+				<h2>ALFAJORES CON CHIP</h2>
+				<p class="desc">Alfajores de masa con chips de chocolate y relleno de dulce de leche.</p>
+				<p class="precio">$ 1.700,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CON%20CHIP" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="ALFAJORES DE CHOCOLATE Alfajores de chocolate con dulce de leche. Se venden por unidad." data-categoria="Alfajores">
+			
+			<div class="cuerpo">
+				<h2>ALFAJORES DE CHOCOLATE</h2>
+				<p class="desc">Alfajores de chocolate con dulce de leche. Se venden por unidad.</p>
+				<p class="precio">$ 950,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20DE%20CHOCOLATE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="BISCOCHUELO CUMPLEAÑERO Bizcochuelo para tortas de cumpleaños. Se encarga con anticipación." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>BISCOCHUELO CUMPLEAÑERO</h2>
+				<p class="desc">Bizcochuelo para tortas de cumpleaños. Se encarga con anticipación.</p>
+				<p class="precio">$ 41.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BISCOCHUELO%20CUMPLEA%C3%91ERO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="BROWNIE Brownie de chocolate, húmedo y compacto. Para acompañar el café." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>BROWNIE</h2>
+				<p class="desc">Brownie de chocolate, húmedo y compacto. Para acompañar el café.</p>
+				<p class="precio">$ 28.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="BROWNIE OREO Brownie de chocolate con galletas Oreo." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>BROWNIE OREO</h2>
+				<p class="desc">Brownie de chocolate con galletas Oreo.</p>
+				<p class="precio">$ 29.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE%20OREO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="BUDIN MANDARINA Budín de mandarina, húmedo y con aroma cítrico." data-categoria="Budines">
+			
+			<div class="cuerpo">
+				<h2>BUDIN MANDARINA</h2>
+				<p class="desc">Budín de mandarina, húmedo y con aroma cítrico.</p>
+				<p class="precio">$ 5.750,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MANDARINA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="BUDIN MARMOLADO Budín marmolado de vainilla y chocolate." data-categoria="Budines">
+			
+			<div class="cuerpo">
+				<h2>BUDIN MARMOLADO</h2>
+				<p class="desc">Budín marmolado de vainilla y chocolate.</p>
+				<p class="precio">$ 10.750,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MARMOLADO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CAJA MATERA 3 mini alfajores de chocolate, 3 mini alfajores de maicena, 4 rodajas de budin de mandarina o naranja, 2 mini tartas cabsha">
+			
+			<div class="cuerpo">
+				<h2>CAJA MATERA</h2>
+				<p class="desc">3 mini alfajores de chocolate, 3 mini alfajores de maicena, 4 rodajas de budin de mandarina o naranja, 2 mini tartas cabsha</p>
+				<p class="precio">$ 19.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CAJA%20MATERA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CARROT CAKE Torta de zanahoria con especias y cobertura de queso crema." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>CARROT CAKE</h2>
+				<p class="desc">Torta de zanahoria con especias y cobertura de queso crema.</p>
+				<p class="precio">$ 23.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CARROT%20CAKE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CHOCOTORTA La clásica: capas de chocolinas, dulce de leche y crema. Tamaño familiar." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>CHOCOTORTA</h2>
+				<p class="desc">La clásica: capas de chocolinas, dulce de leche y crema. Tamaño familiar.</p>
+				<p class="precio">$ 36.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CHOCOTORTA 22CM Chocotorta en molde de 22 cm, para unas 10 porciones." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>CHOCOTORTA 22CM</h2>
+				<p class="desc">Chocotorta en molde de 22 cm, para unas 10 porciones.</p>
+				<p class="precio">$ 33.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%2022CM" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CHOCOTORTA CHICA Chocotorta en tamaño chico, para 4 a 6 porciones." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>CHOCOTORTA CHICA</h2>
+				<p class="desc">Chocotorta en tamaño chico, para 4 a 6 porciones.</p>
+				<p class="precio">$ 32.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%20CHICA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="CUPCAKES RED VELVET Cupcakes red velvet con frosting de queso crema.">
+			
+			<div class="cuerpo">
+				<h2>CUPCAKES RED VELVET</h2>
+				<p class="desc">Cupcakes red velvet con frosting de queso crema.</p>
+				<p class="precio">$ 7.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20RED%20VELVET" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="HUEVO CHOCOTORTA Huevo de chocolate relleno con chocotorta.">
+			
+			<div class="cuerpo">
+				<h2>HUEVO CHOCOTORTA</h2>
+				<p class="desc">Huevo de chocolate relleno con chocotorta.</p>
+				<p class="precio">$ 14.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20HUEVO%20CHOCOTORTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="HUEVOS OREO Huevos de chocolate rellenos con crema de galletas Oreo.">
+			
+			<div class="cuerpo">
+				<h2>HUEVOS OREO</h2>
+				<p class="desc">Huevos de chocolate rellenos con crema de galletas Oreo.</p>
+				<p class="precio">$ 16.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20HUEVOS%20OREO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="LEMON PIE Base crocante, crema de limón y merengue horneado." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>LEMON PIE</h2>
+				<p class="desc">Base crocante, crema de limón y merengue horneado.</p>
+				<p class="precio">$ 23.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20LEMON%20PIE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="MARQUISE SIN HARINA (GLUTEN FREE) Marquise de chocolate sin harina, apta para quienes no consumen gluten.">
+			
+			<div class="cuerpo">
+				<h2>MARQUISE SIN HARINA (GLUTEN FREE)</h2>
+				<p class="desc">Marquise de chocolate sin harina, apta para quienes no consumen gluten.</p>
+				<p class="precio">$ 22.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE%20SIN%20HARINA%20(GLUTEN%20FREE)" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="MASAS SECAS Surtido de masas secas para acompañar el té. Se venden por peso.">
+			
+			<div class="cuerpo">
+				<h2>MASAS SECAS</h2>
+				<p class="desc">Surtido de masas secas para acompañar el té. Se venden por peso.</p>
+				<p class="precio">$ 18.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MASAS%20SECAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="MINI ROGEL Rogel individual: capas finas de masa, dulce de leche y merengue." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>MINI ROGEL</h2>
+				<p class="desc">Rogel individual: capas finas de masa, dulce de leche y merengue.</p>
+				<p class="precio">$ 18.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MINI%20ROGEL" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="MUFFINS CON FRAMBUESAS Muffins caseros con frambuesas. Se venden por unidad.">
+			
+			<div class="cuerpo">
+				<h2>MUFFINS CON FRAMBUESAS</h2>
+				<p class="desc">Muffins caseros con frambuesas. Se venden por unidad.</p>
+				<p class="precio">$ 25.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MUFFINS%20CON%20FRAMBUESAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="PAVLOVA Torta en base de merengue, dulce de leche, crema cahntilly y frutas de estacion" data-categoria="Tortas">
+			<img src="fotos/680a0cd9-5f6e-449e-971e-1a2186a83e9f.webp" alt="PAVLOVA" loading="lazy" width="400" height="200">
+			<div class="cuerpo">
+				<h2>PAVLOVA</h2>
+				<p class="desc">Torta en base de merengue, dulce de leche, crema cahntilly y frutas de estacion</p>
+				<p class="precio">$ 36.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PAVLOVA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="PRALINE Mani con cobertura de caramelo x 200 gramos">
+			
+			<div class="cuerpo">
+				<h2>PRALINE</h2>
+				<p class="desc">Mani con cobertura de caramelo x 200 gramos</p>
+				<p class="precio">$ 3.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PRALINE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="ROGEL Torta rogel de capas finas con dulce de leche y merengue italiano." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>ROGEL</h2>
+				<p class="desc">Torta rogel de capas finas con dulce de leche y merengue italiano.</p>
+				<p class="precio">$ 35.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ROGEL" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TABLETA PASCUA ROCKLET Tableta de chocolate con rocklets, para Pascua.">
+			
+			<div class="cuerpo">
+				<h2>TABLETA PASCUA ROCKLET</h2>
+				<p class="desc">Tableta de chocolate con rocklets, para Pascua.</p>
+				<p class="precio">$ 12.250,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TABLETA%20PASCUA%20ROCKLET" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TABLETAS CHICAS Tabletas de chocolate en tamaño chico.">
+			
+			<div class="cuerpo">
+				<h2>TABLETAS CHICAS</h2>
+				<p class="desc">Tabletas de chocolate en tamaño chico.</p>
+				<p class="precio">$ 5.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TABLETAS%20CHICAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TARTA CABSHA Tarta de chocolate con relleno estilo cabsha y base crocante." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>TARTA CABSHA</h2>
+				<p class="desc">Tarta de chocolate con relleno estilo cabsha y base crocante.</p>
+				<p class="precio">$ 30.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20CABSHA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TARTA DE COCO Tarta de coco con base de masa dulce." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>TARTA DE COCO</h2>
+				<p class="desc">Tarta de coco con base de masa dulce.</p>
+				<p class="precio">$ 30.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20COCO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TARTA DE DURAZNO Tarta de masa dulce con duraznos y crema pastelera." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>TARTA DE DURAZNO</h2>
+				<p class="desc">Tarta de masa dulce con duraznos y crema pastelera.</p>
+				<p class="precio">$ 34.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20DURAZNO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TARTA DE MANZANA/PERA Tarta de manzana o pera sobre base de masa dulce. Consultá disponibilidad." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>TARTA DE MANZANA/PERA</h2>
+				<p class="desc">Tarta de manzana o pera sobre base de masa dulce. Consultá disponibilidad.</p>
+				<p class="precio">$ 23.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20MANZANA%2FPERA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TARTA DE RICOTA Tarta de ricota casera, suave y poco dulce." data-categoria="Tartas">
+			
+			<div class="cuerpo">
+				<h2>TARTA DE RICOTA</h2>
+				<p class="desc">Tarta de ricota casera, suave y poco dulce.</p>
+				<p class="precio">$ 20.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20RICOTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TIRAMISU Tiramisú con capas de bizcocho embebido en café y crema de mascarpone.">
+			
+			<div class="cuerpo">
+				<h2>TIRAMISU</h2>
+				<p class="desc">Tiramisú con capas de bizcocho embebido en café y crema de mascarpone.</p>
+				<p class="precio">$ 25.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TIRAMISU GRANDE Tiramisú en tamaño grande, para compartir.">
+			
+			<div class="cuerpo">
+				<h2>TIRAMISU GRANDE</h2>
+				<p class="desc">Tiramisú en tamaño grande, para compartir.</p>
+				<p class="precio">$ 34.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU%20GRANDE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TORTA DE NUEZ Torta de nueces con relleno de dulce de leche." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>TORTA DE NUEZ</h2>
+				<p class="desc">Torta de nueces con relleno de dulce de leche.</p>
+				<p class="precio">$ 22.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20DE%20NUEZ" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TORTA MATERA DE ZANAHORIA SIN HARINA Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>TORTA MATERA DE ZANAHORIA SIN HARINA</h2>
+				<p class="desc">Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten.</p>
+				<p class="precio">$ 9.500,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20MATERA%20DE%20ZANAHORIA%20SIN%20HARINA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TORTA PIONONO Torta de pionono enrollado con relleno de dulce de leche." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>TORTA PIONONO</h2>
+				<p class="desc">Torta de pionono enrollado con relleno de dulce de leche.</p>
+				<p class="precio">$ 27.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20PIONONO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TORTA RECTANGULAR PIONON Torta rectangular de pionono con dulce de leche. Ideal para cumpleaños." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>TORTA RECTANGULAR PIONON</h2>
+				<p class="desc">Torta rectangular de pionono con dulce de leche. Ideal para cumpleaños.</p>
+				<p class="precio">$ 35.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20RECTANGULAR%20PIONON" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+			<article class="tarjeta" data-busqueda="TRIPLE CHOCOLATE Tres capas de chocolate: bizcocho, ganache y cobertura." data-categoria="Tortas">
+			
+			<div class="cuerpo">
+				<h2>TRIPLE CHOCOLATE</h2>
+				<p class="desc">Tres capas de chocolate: bizcocho, ganache y cobertura.</p>
+				<p class="precio">$ 47.000,00</p>
+				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TRIPLE%20CHOCOLATE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			</div>
+		</article>
+		</div>
+		<p class="vacio" id="sin-resultados" hidden>No encontramos nada con esa búsqueda.</p>
+	<footer>Precios actualizados al 18/8/2026</footer>
+</div>
+<script>
+(function () {
+	var buscador = document.getElementById('buscador');
+	var filtros = document.querySelectorAll('.filtro');
+	var tarjetas = document.querySelectorAll('.tarjeta');
+	var vacio = document.getElementById('sin-resultados');
+	var categoria = null;
+
+	// Misma normalización que el catálogo dinámico: sin tildes para que "tiramisu" encuentre
+	// "Tiramisú", pero preservando la ñ, que en castellano es una letra y no una n con adorno.
+	function normalizar(t) {
+		return t.toLowerCase().replace(/ñ/g, '\u0001').normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '').replace(/\u0001/g, 'ñ');
+	}
+
+	function aplicar() {
+		var q = normalizar(buscador ? buscador.value.trim() : '');
+		var visibles = 0;
+		for (var i = 0; i < tarjetas.length; i++) {
+			// Cada tarjeta trae su propio texto de búsqueda y su categoría: no hay un array paralelo
+			// que se pueda desalinear con el DOM.
+			var t = tarjetas[i];
+			var okTexto = !q || normalizar(t.getAttribute('data-busqueda') || '').indexOf(q) !== -1;
+			var okCat = !categoria || t.getAttribute('data-categoria') === categoria;
+			var mostrar = okTexto && okCat;
+			t.hidden = !mostrar;
+			if (mostrar) visibles++;
+		}
+		if (vacio) vacio.hidden = visibles !== 0;
+	}
+
+	if (buscador) buscador.addEventListener('input', aplicar);
+	for (var j = 0; j < filtros.length; j++) {
+		filtros[j].addEventListener('click', function (e) {
+			var valor = e.currentTarget.getAttribute('data-categoria') || null;
+			// "Todas" (sin data-categoria) limpia el filtro siempre; una categoría alterna. Escrito
+			// como dos casos y no como un toggle único porque para "Todas" el toggle daba
+			// "null === null ? null : null" — o sea, un botón que anuncia ser presionable y no hace
+			// nada cuando ya está activo.
+			categoria = valor === null || categoria === valor ? null : valor;
+			for (var k = 0; k < filtros.length; k++) {
+				var f = filtros[k];
+				f.setAttribute('aria-pressed', String((f.getAttribute('data-categoria') || null) === categoria));
+			}
+			aplicar();
+		});
+	}
+})();
+</script>
+</body>
+</html>
