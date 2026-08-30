@@ -3,819 +3,1013 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src 'self'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'">
 <title>La Dulcería — Catálogo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap">
 <style>
 :root {
-	--fondo: #faf7f2;
-	--tarjeta: #ffffff;
-	--texto: #2b2118;
-	--suave: #7a6a5a;
-	--borde: #e8ddd0;
-	--acento: #8b5e34;
+	--crema: #fdf1ec;
+	--crema-hondo: #f7e4dc;
+	--rosa: #ff5fa8;
+	--rosa-suave: #ffd9e8;
+	--vino: #4a1f2e;
+	--vino-claro: #7a4c5c;
+	--blanco: #ffffff;
+	--borde: #e8d3ca;
+	/* El rosa apagado que se usa sobre el vino, donde el rosa puro vibra. */
+	--rosa-sobre-vino: #ffa8ce;
 	/*
-	 * El texto que va encima del acento, y existe porque el acento cambia entre modos: un
-	 * "color: #fff" literal daba 5.60 en claro pero 2.29 en oscuro, o sea que el chip de
-	 * categoria activo —justo el que tiene que destacarse— quedaba casi ilegible.
-	 */
-	--sobre-acento: #ffffff;
-	/*
-	 * El borde de los controles, distinto de --borde.
+	 * Los textos que van sobre el vino. Son tokens y no literales sueltos porque aparecen en varias
+	 * reglas cada uno: si alguien ajusta '--vino', estos son los que hay que revisar con él, y
+	 * sueltos por el archivo no habría forma de encontrarlos.
 	 *
-	 * --borde sirve para separadores decorativos, donde el contraste no se exige. Pero el borde de
-	 * un boton cuyo fondo es igual al del contenedor es su UNICO indicador visual, y ahi el minimo
-	 * es 3:1 — el valor decorativo daba 1.34, o sea un boton practicamente invisible.
+	 * Contraste sobre '--vino' (#4a1f2e): el primero da 9.98:1 y el segundo 8.94:1. El de la línea
+	 * legal del pie da 6.70:1.
 	 */
-	--borde-control: #767676;
-	/*
-	 * El teal de WhatsApp y no el verde claro (#25d366), y no es preferencia estetica: con blanco
-	 * encima, el verde claro da 1.98:1 y el minimo accesible es 4.5. Este da 7.67 y conserva el
-	 * texto blanco, que es la convencion del boton de accion en todos lados.
-	 */
-	--wa: #075E54;
-	--sobre-wa: #ffffff;
-	--sombra: 0 1px 3px rgba(43, 33, 24, .08), 0 4px 12px rgba(43, 33, 24, .04);
+	--sobre-vino: #e9d7dd;
+	--sobre-vino-tenue: #e0cbd2;
+	--legal: #c9aeb7;
+	/* El rojo de los avisos del pedido. Sobre blanco da 7.32:1. */
+	--alerta: #9c2b4e;
+	/* Las líneas divisorias sobre el vino: el crema a baja opacidad. */
+	--linea-sobre-vino: rgba(253, 241, 236, 0.22);
+	--linea-sobre-vino-tenue: rgba(253, 241, 236, 0.18);
+	--titulo: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+	--texto: 'Jost', 'Segoe UI', system-ui, -apple-system, sans-serif;
+	/* El ancho de la caja de contenido. El diseño respira: no se estira a pantalla completa. */
+	--ancho: 1180px;
 }
-@media (prefers-color-scheme: dark) {
-	:root {
-		--fondo: #1a1613;
-		--tarjeta: #241e1a;
-		--texto: #f0e8df;
-		--suave: #a89684;
-		--borde: #3a2f27;
-		--acento: #d9a066;
-		--sobre-acento: #2b2118;
-		--borde-control: #8b7a6a;
-		--sobre-wa: #ffffff;
-		--sombra: 0 1px 3px rgba(0, 0, 0, .3), 0 4px 12px rgba(0, 0, 0, .2);
-	}
-}
-* { box-sizing: border-box; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
 	margin: 0;
-	/*
-	 * El espacio de abajo esta reservado SIEMPRE, tenga o no pedido, y esa es la parte que
-	 * importa: si apareciera junto con la barra, el documento creceria ~110px justo cuando el
-	 * cliente toca "+", el contenido se correria bajo su dedo, y el segundo toque caeria en otra
-	 * tarjeta — o en el boton de WhatsApp de un producto que no eligio.
-	 *
-	 * Y va en el body y no en la grilla porque despues de la grilla estan el aviso de "no
-	 * encontramos nada" y el footer con la fecha de los precios, que es justo el dato que la
-	 * barra no puede tapar.
-	 */
-	/*
-	 * 150px, y el numero sale de sumar el CSS de la barra, no de estimarlo:
-	 *   12 (padding) + 44 (fila del resumen) + 10 + 44 (boton de enviar) + 12 (padding) = 122
-	 *   + 27 mas cuando aparece la nota del envio (8 de separacion + una linea a .8rem) = 149
-	 * Con 110 tapaba 12px de la ultima tarjeta, y 39 despues de tocar enviar — justo el footer con
-	 * la fecha de los precios, que es el dato que el aviso de caducidad necesita que se lea.
-	 */
-	padding: 24px 16px calc(150px + env(safe-area-inset-bottom, 0px));
-	background: var(--fondo);
-	color: var(--texto);
-	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-	line-height: 1.5;
-	-webkit-text-size-adjust: 100%;
+	background: var(--crema);
+	color: var(--vino);
+	font-family: var(--texto);
+	font-weight: 300;
+	font-size: 17px;
+	line-height: 1.6;
+	/* El pedido es una barra fija abajo: sin esto tapa el pie de página. El guión no toca esto. */
+	padding-bottom: 96px;
 }
-.envoltorio { max-width: 1100px; margin: 0 auto; }
-header { text-align: center; margin-bottom: 28px; }
-header h1 { font-size: 1.75rem; margin: 0 0 4px; letter-spacing: -.02em; }
-header p { margin: 0; color: var(--suave); font-size: .95rem; }
-.controles { max-width: 460px; margin: 0 auto 20px; }
+
+img { max-width: 100%; display: block; }
+
+.envoltorio { width: 100%; max-width: var(--ancho); margin: 0 auto; padding: 0 24px; }
+
+h1, h2, h3 { font-family: var(--titulo); font-weight: 600; line-height: 1.05; margin: 0; }
+
+/* La línea chica en mayúsculas que encabeza cada sección. */
+.volanta {
+	font-size: 12px;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	font-weight: 500;
+	color: var(--vino-claro);
+	margin: 0 0 14px;
+}
+
+/* ─────────────────────────────── cinta superior y encabezado */
+
+.cinta {
+	background: var(--vino);
+	color: var(--blanco);
+	font-size: 13px;
+	letter-spacing: 0.04em;
+	padding: 11px 0;
+}
+.cinta .envoltorio { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; text-align: center; }
+.cinta span { display: inline-flex; align-items: center; gap: 10px; }
+.cinta span + span::before { content: '·'; opacity: 0.5; }
+
+.encabezado { padding: 22px 0; border-bottom: 1px solid var(--borde); }
+.encabezado .envoltorio { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.marca h1 { font-size: 38px; font-style: italic; letter-spacing: -0.01em; }
+.marca p {
+	margin: 2px 0 0;
+	font-size: 11px;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--vino-claro);
+}
+
+.menu { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+.menu a { color: var(--vino); text-decoration: none; font-size: 16px; }
+.menu a:hover { color: var(--rosa); }
+/* El botón de pedir del encabezado: contorno, para que no compita con el "Pedir por WhatsApp". */
+.menu .pedir-arriba {
+	border: 1.5px solid var(--vino);
+	padding: 12px 30px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	font-size: 13px;
+}
+.menu .pedir-arriba:hover { background: var(--vino); color: var(--crema); }
+
+/* ─────────────────────────────── portada */
+
+.portada { display: grid; grid-template-columns: 1fr; }
+/*
+ * El padding lateral se pone acá y no se hereda del '.envoltorio'.
+ *
+ * La mitad de texto de la portada es una celda de un grid a dos columnas, así que el
+ * 'margin: 0 auto' del envoltorio no tiene contra qué centrar: la celda ya mide lo que mide, y el
+ * texto terminaba pegado al borde izquierdo de la pantalla. Con el padding propio arranca alineado
+ * con el resto de la página.
+ */
+.portada-texto { padding: 56px 24px 64px; max-width: none; }
+.portada-texto h2 { font-size: clamp(46px, 11vw, 92px); letter-spacing: -0.02em; }
+.portada-texto .bajada { font-size: 19px; max-width: 30em; margin: 26px 0 0; color: var(--vino-claro); }
+
+.portada-botones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+.boton {
+	display: inline-block;
+	text-decoration: none;
+	font-size: 13px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	padding: 17px 34px;
+	border: 1.5px solid var(--vino);
+	cursor: pointer;
+	font-family: var(--texto);
+}
+.boton-lleno { background: var(--vino); color: var(--crema); }
+.boton-lleno:hover { background: var(--rosa); border-color: var(--rosa); color: var(--vino); }
+.boton-vacio { background: transparent; color: var(--vino); }
+.boton-vacio:hover { background: var(--vino); color: var(--crema); }
+
+/* El bloque de la foto. Sin foto queda el rosa de la marca, como en el diseño original. */
+.portada-foto {
+	background: var(--rosa);
+	position: relative;
+	min-height: 420px;
+	display: flex;
+	align-items: flex-end;
+	padding: 26px;
+}
+/*
+ * Acá sí 'cover', a diferencia de las tarjetas: es un bloque a sangre que ocupa media pantalla, y
+ * con 'contain' quedarían franjas rosas arriba y abajo de la foto. El recorte es del CSS y no del
+ * archivo, así que la foto guardada sigue entera y cambiar esta decisión no pierde píxeles.
+ */
+.portada-foto img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+/* La tarjeta blanca apoyada sobre la foto. 'position: relative' la deja por encima del 'img'. */
+.portada-pie { position: relative; background: var(--blanco); padding: 22px 26px; max-width: 420px; }
+.portada-pie h3 { font-size: 26px; }
+.portada-pie p { margin: 8px 0 0; font-size: 15px; color: var(--vino-claro); }
+
+/* La cinta de especialidades. */
+.se-encarga { background: var(--crema-hondo); padding: 20px 0; }
+.se-encarga .envoltorio { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.se-encarga .volanta { margin: 0; }
+.se-encarga li { list-style: none; }
+.se-encarga ul { display: flex; gap: 18px; flex-wrap: wrap; margin: 0; padding: 0; }
+.se-encarga li + li::before { content: '·'; opacity: 0.45; margin-right: 18px; }
+
+/* ─────────────────────────────── lo más pedido */
+
+.seccion { padding: 72px 0; }
+.seccion-titulo { display: grid; gap: 16px; align-items: end; margin-bottom: 40px; }
+.seccion-titulo h2 { font-size: clamp(36px, 6vw, 58px); }
+.seccion-titulo p { margin: 0; color: var(--vino-claro); max-width: 34em; }
+
+.destacados { display: grid; grid-template-columns: 1fr; gap: 30px; }
+.destacado figure { margin: 0; }
+.destacado .marco { background: var(--rosa-suave); aspect-ratio: 1; overflow: hidden; }
+/* Enteras, como en las tarjetas y por el mismo motivo. */
+.destacado .marco img { width: 100%; height: 100%; object-fit: contain; }
+.destacado h3 { font-size: 30px; margin-top: 18px; }
+.destacado p { margin: 8px 0 0; color: var(--vino-claro); font-size: 16px; }
+
+/* ─────────────────────────────── catálogo */
+
+.catalogo { border-top: 1px solid var(--borde); }
+
+.controles { margin-bottom: 20px; }
 #buscador {
 	width: 100%;
-	padding: 12px 16px;
+	max-width: 420px;
+	padding: 14px 18px;
+	border: 1.5px solid var(--borde);
+	background: var(--blanco);
+	color: var(--vino);
+	font-family: var(--texto);
 	font-size: 16px;
-	font-family: inherit;
-	border: 1px solid var(--borde);
-	border-radius: 10px;
-	background: var(--tarjeta);
-	color: var(--texto);
 }
-#buscador:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
-/*
- * El foco visible para todo lo demas. Sin esto, los botones nuevos heredarian el outline por
- * defecto del navegador, que sobre un fondo propio puede quedar invisible.
- */
-:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
-.filtros { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px; }
-.filtro {
-	padding: 7px 15px;
-	font-size: .875rem;
-	font-family: inherit;
-	border: 1px solid var(--borde);
-	border-radius: 999px;
-	background: var(--tarjeta);
-	color: var(--texto);
-	cursor: pointer;
-	min-height: 38px;
-}
-.filtro[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
-.grilla { display: grid; grid-template-columns: 1fr; gap: 16px; }
-@media (min-width: 600px) { .grilla { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 900px) { .grilla { grid-template-columns: repeat(3, 1fr); } }
-.tarjeta {
-	background: var(--tarjeta);
-	border: 1px solid var(--borde);
-	border-radius: 14px;
-	overflow: hidden;
-	box-shadow: var(--sombra);
-	display: flex;
-	flex-direction: column;
-}
-/*
- * Sin esto, el buscador y los filtros no ocultan nada.
- *
- * El navegador aplica `display: none` a `[hidden]` desde su hoja por defecto, pero cualquier
- * `display` declarado en una hoja de autor le gana — y `.tarjeta` arriba declara `display: flex`.
- * El JS marca `t.hidden = true` correctamente y la tarjeta sigue a la vista.
- *
- * Va con `!important` porque tiene que ganarle a `.tarjeta` y a cualquier regla futura: ocultar
- * es una decisión de estado, no de estilo.
- */
-[hidden] { display: none !important; }
-.tarjeta img { width: 100%; height: 200px; object-fit: cover; display: block; background: var(--borde); }
-.cuerpo { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.cuerpo h2 { font-size: 1.05rem; margin: 0; }
-.cuerpo .desc { margin: 0; color: var(--suave); font-size: .9rem; flex: 1; }
-.precio { font-size: 1.3rem; font-weight: 600; margin: 0; }
-.pedir {
-	display: block;
-	text-align: center;
-	padding: 11px;
-	background: var(--wa);
-	color: var(--sobre-wa);
-	text-decoration: none;
-	border-radius: 9px;
-	font-weight: 600;
-	font-size: .9rem;
-	min-height: 44px;
-}
-/* ── El pedido ─────────────────────────────────────────────────────────────── */
+#buscador:focus { outline: 2px solid var(--rosa); outline-offset: 2px; }
 
-.cantidad {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	margin-top: 10px;
-}
-.cantidad button {
-	/*
-	 * 44 de ancho Y de alto. Solo la altura daria un boton de 44x20, que es lo que pasa cuando se
-	 * copia el patron de .pedir sin notar que ese funciona por ser display:block a ancho completo.
-	 */
-	min-width: 44px;
-	min-height: 44px;
-	font-size: 1.2rem;
-	line-height: 1;
-	border: 1px solid var(--borde-control);
-	border-radius: 10px;
-	background: var(--tarjeta);
-	color: var(--texto);
+/* Los filtros. La clase '.filtro' y el 'data-categoria' los lee el guión compartido. */
+.filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+.filtro {
+	background: transparent;
+	border: 1.5px solid var(--borde);
+	color: var(--vino);
+	font-family: var(--texto);
+	font-size: 15px;
+	padding: 11px 22px;
 	cursor: pointer;
 }
+.filtro:hover { border-color: var(--vino); }
+/* El estado activo lo marca el guión con 'aria-pressed', no con una clase. */
+.filtro[aria-pressed="true"] { background: var(--vino); border-color: var(--vino); color: var(--crema); }
+
+.grilla { display: grid; grid-template-columns: 1fr; gap: 26px; }
+
 /*
- * El deshabilitado se distingue por color y fondo, no por opacidad: un opacity de .4 sobre el
- * texto daba 2.42:1. Y no es un detalle menor — el "-" arranca deshabilitado en los 39 productos,
- * asi que ese es el estado inicial de todo el catalogo.
+ * La tarjeta. **Los nombres de acá los usa el guión compartido**: '.tarjeta' para filtrar,
+ * '.acciones', '.agregar' y '.consultar' para el carrito. Cambiarlos rompe el pedido.
  */
-.cantidad button:disabled { color: var(--suave); background: var(--fondo); border-color: var(--borde); cursor: default; }
-.cuenta { min-width: 2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tarjeta { background: var(--blanco); border: 1px solid var(--borde); display: flex; flex-direction: column; }
+/*
+ * 'contain' y no 'cover', igual que el clásico: las fotos se guardan enteras porque el dueño lo
+ * pidió así —"que se vean completas como las he subido, no recortadas"— y recortarlas con el CSS
+ * anularía esa decisión desde el otro lado. El recuadro cuadrado se mantiene para que la grilla
+ * quede pareja; lo que sobra alrededor de una foto vertical lo llena el rosa de la marca.
+ */
+.tarjeta > img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--rosa-suave); }
+.tarjeta .cuerpo { padding: 22px; display: flex; flex-direction: column; flex: 1; }
+.tarjeta h2 { font-size: 27px; }
+.tarjeta .desc { margin: 10px 0 0; color: var(--vino-claro); font-size: 15px; }
+.tarjeta .precio { margin: 14px 0 0; font-size: 20px; font-weight: 500; font-family: var(--titulo); }
+
+/* 'margin-top: auto' alinea los botones abajo aunque las descripciones midan distinto. */
+.acciones { display: flex; gap: 10px; margin-top: auto; padding-top: 18px; }
+.accion {
+	flex: 1;
+	text-align: center;
+	text-decoration: none;
+	font-family: var(--texto);
+	font-size: 12px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	padding: 15px 12px;
+	cursor: pointer;
+	border: 1.5px solid var(--vino);
+}
+.consultar { background: var(--vino); color: var(--crema); }
+.consultar:hover { background: var(--rosa); border-color: var(--rosa); color: var(--vino); }
+.agregar { background: transparent; color: var(--vino); }
+.agregar:hover { background: var(--vino); color: var(--crema); }
+/* Cuando queda un solo botón ocupa la fila entera, sin clase condicional en el HTML. */
+.accion:only-child { flex: 1; }
+
+.vacio { text-align: center; color: var(--vino-claro); padding: 40px 0; }
+
+/* ─────────────────────────────── encargos */
+
+.encargos { background: var(--vino); color: var(--crema); padding: 78px 0; }
+.encargos .volanta { color: var(--rosa-sobre-vino); }
+.encargos h2 { font-size: clamp(38px, 7vw, 66px); }
+.encargos .texto { color: var(--sobre-vino); margin: 24px 0 0; max-width: 26em; }
+.encargos .boton-lleno { background: var(--rosa); border-color: var(--rosa); color: var(--vino); margin-top: 32px; }
+.encargos .boton-lleno:hover { background: var(--crema); border-color: var(--crema); }
+
+.pasos { display: grid; gap: 0; margin-top: 46px; }
+.paso { display: grid; grid-template-columns: 76px 1fr; gap: 18px; padding: 26px 0; border-top: 1px solid var(--linea-sobre-vino); }
+.paso:last-child { border-bottom: 1px solid var(--linea-sobre-vino); }
+.paso .numero { font-family: var(--titulo); font-size: 40px; color: var(--rosa-sobre-vino); line-height: 1; }
+.paso h3 { font-family: var(--texto); font-weight: 500; font-size: 19px; }
+.paso p { margin: 6px 0 0; color: var(--sobre-vino-tenue); font-size: 15.5px; }
+
+/* ─────────────────────────────── nosotras */
+
+.nosotras { display: grid; grid-template-columns: 1fr; }
+.nosotras-foto { background: var(--rosa); min-height: 340px; }
+.nosotras-foto img { width: 100%; height: 100%; object-fit: cover; }
+.nosotras-texto { padding: 60px 24px; }
+.nosotras-texto h2 { font-size: clamp(34px, 6vw, 56px); }
+.nosotras-texto p { color: var(--vino-claro); margin: 22px 0 0; }
+.nosotras-texto .instagram {
+	display: inline-block;
+	margin-top: 28px;
+	color: var(--vino);
+	font-size: 13px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	border-bottom: 1.5px solid var(--rosa);
+	padding-bottom: 5px;
+	text-decoration: none;
+}
+
+/* ─────────────────────────────── pie */
+
+.pie { background: var(--vino); color: var(--crema); padding: 60px 0 40px; }
+.pie .columnas { display: grid; grid-template-columns: 1fr; gap: 34px; }
+.pie h2 { font-size: 40px; font-style: italic; }
+.pie .bajada { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--rosa-sobre-vino); margin: 6px 0 0; }
+.pie .volanta { color: var(--rosa-sobre-vino); }
+.pie p { margin: 0 0 10px; color: var(--sobre-vino); font-size: 15.5px; }
+.pie a { color: var(--sobre-vino); }
+.pie .legal { margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--linea-sobre-vino-tenue); font-size: 13.5px; color: var(--legal); }
+
+.visualmente-oculto {
+	position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+	overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ─────────────────────────────── la barra del pedido
+ *
+ * Los ids y las clases de esta sección son **los mismos que en el catálogo clásico**, porque el
+ * guión que la maneja es el mismo archivo. Lo único distinto es el color.
+ */
 
 .pedido {
 	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 10;
-	padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-	background: var(--tarjeta);
-	border-top: 1px solid var(--borde-control);
-	box-shadow: 0 -2px 12px rgba(43, 33, 24, .12);
+	left: 0; right: 0; bottom: 0;
+	background: var(--blanco);
+	border-top: 2px solid var(--vino);
+	padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+	z-index: 40;
+	max-height: 82vh;
+	overflow-y: auto;
+	box-shadow: 0 -8px 30px rgba(74, 31, 46, 0.13);
 }
-.pedido-resumen { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.pedido-total { font-weight: 700; font-variant-numeric: tabular-nums; }
-/*
- * Oculto a la vista pero no al lector de pantalla. Un "display: none" lo sacaria tambien del
- * arbol de accesibilidad, que es justo lo contrario de lo que hace falta aca.
+.pedido-resumen { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pedido-total { font-family: var(--titulo); font-size: 21px; font-weight: 600; flex: 1; min-width: 140px; }
+.pedido-ver, .pedido-vaciar {
+	background: transparent; border: 1.5px solid var(--vino); color: var(--vino);
+	font-family: var(--texto); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+	padding: 11px 20px; cursor: pointer;
+}
+.pedido-ver:hover, .pedido-vaciar:hover { background: var(--vino); color: var(--crema); }
+
+.pedido-datos { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+.pedido-campo { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--vino-claro); }
+.pedido-campo input {
+	padding: 12px 14px; border: 1.5px solid var(--borde); background: var(--blanco);
+	color: var(--vino); font-family: var(--texto); font-size: 16px;
+}
+.pedido-campo input:focus { outline: 2px solid var(--rosa); outline-offset: 1px; }
+
+/* ─────────────────────────────── las clases que ESCRIBE el guión compartido
+ *
+ * Todo lo de este bloque lo pone 'GUION' / 'GUION_PEDIDO' en tiempo de ejecución, no la plantilla.
+ * Es la otra mitad del contrato con el guión y la más fácil de olvidar: los selectores que el
+ * guión **lee** ('.tarjeta', '.filtro', '#buscador') saltan a la vista porque están en el HTML,
+ * pero estas clases no aparecen en ningún lado de este archivo — el guión las agrega con
+ * 'className =' y 'classList.add'. Sin sus reglas, el carrito *funciona* y se ve roto: el detalle
+ * del pedido sale como texto suelto y el botón de un producto ya elegido no se distingue.
+ *
+ * Si algún día se agrega una clase al guión, este bloque es el que hay que actualizar. El comando
+ * que las lista todas:
+ *   grep -oE "className = '[^']+'|classList\.(add|remove)\('[^']+'" plantilla-catalogo.ts
  */
-.visualmente-oculto {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	margin: -1px;
-	padding: 0;
-	overflow: hidden;
-	clip: rect(0 0 0 0);
-	white-space: nowrap;
-	border: 0;
-}
-.pedido-ver {
-	min-height: 44px;
-	padding: 0 14px;
-	border: 1px solid var(--borde-control);
-	border-radius: 10px;
-	background: transparent;
-	color: var(--texto);
-	cursor: pointer;
-}
-.pedido-enviar { margin-top: 10px; }
-.pedido-nota { margin: 8px 0 0; font-size: .8rem; color: var(--suave); }
-.pedido-detalle { margin-top: 10px; max-height: 40vh; overflow-y: auto; }
-.pedido-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
-.pedido-linea + .pedido-linea { border-top: 1px solid var(--borde); }
-.pedido-linea .nombre { flex: 1; font-size: .9rem; }
-.pedido-linea .sub { font-variant-numeric: tabular-nums; font-size: .9rem; }
 
 /*
- * Con el teclado abierto la barra estorba, y de dos formas opuestas segun la plataforma: en
- * Android sube y queda flotando sobre los resultados de la busqueda, y en iOS se va fuera de
- * pantalla. Esconderla mientras el buscador tiene foco resuelve las dos.
+ * El botón de un producto que ya está en el pedido. **Es el estado que más se mira**: es lo que le
+ * dice al cliente qué eligió entre las tarjetas. El texto además cambia de "Agregar" al número, así
+ * que no depende solo del color.
+ *
+ * Fondo rosa con texto vino: 4.88:1, por encima del mínimo de 4.5. Blanco sobre ese rosa daría
+ * 2.82 y sería justo el estado más importante el peor de leer.
+ */
+.agregar.puesto { background: var(--rosa); border-color: var(--rosa); color: var(--vino); font-weight: 500; }
+
+/* El +/− de cada renglón del detalle. */
+.cantidad { display: flex; align-items: center; gap: 6px; flex: none; }
+.cantidad button {
+	/* 36 y no 44: viven dentro de un renglón del detalle, no aislados en una tarjeta. */
+	min-width: 36px;
+	min-height: 36px;
+	font-size: 17px;
+	line-height: 1;
+	border: 1.5px solid var(--borde);
+	background: var(--blanco);
+	color: var(--vino);
+	font-family: var(--texto);
+	cursor: pointer;
+}
+.cantidad button:hover:not(:disabled) { border-color: var(--vino); }
+/* Deshabilitado por color y fondo, no por opacidad: un opacity bajo hunde el contraste. */
+.cantidad button:disabled { color: var(--vino-claro); background: var(--crema); border-color: var(--borde); cursor: default; }
+.cuenta { min-width: 2ch; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Los renglones del detalle del pedido. */
+.pedido-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.pedido-linea + .pedido-linea { border-top: 1px solid var(--borde); }
+.pedido-linea .nombre { flex: 1; min-width: 0; font-size: 15px; }
+.pedido-linea .sub { font-variant-numeric: tabular-nums; font-size: 15px; flex: none; }
+
+/*
+ * Con el teclado abierto la barra estorba, y de dos formas opuestas según la plataforma: en Android
+ * sube y queda flotando sobre los resultados de la búsqueda, y en iOS se va fuera de pantalla.
+ * Esconderla mientras el buscador tiene foco resuelve las dos. La clase la pone el guión en <body>.
  */
 .escribiendo .pedido { display: none; }
 
-.vacio { text-align: center; color: var(--suave); padding: 56px 16px; }
-footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .8rem; }
+.pedido-aviso { margin: 10px 0 0; font-size: 14px; color: var(--alerta); }
+.pedido-aviso:empty { display: none; }
+.pedido-detalle { margin-top: 12px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.pedido-nota { margin: 8px 0 0; font-size: 13px; color: var(--vino-claro); }
+
+.pedir {
+	display: block; margin-top: 12px; text-align: center; text-decoration: none;
+	background: var(--vino); color: var(--crema); padding: 17px;
+	font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.pedir:hover { background: var(--rosa); color: var(--vino); }
+
+/* El acceso al pedido desde el encabezado. */
+.ver-pedido {
+	background: var(--rosa); border: 1.5px solid var(--rosa); color: var(--vino);
+	font-family: var(--texto); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+	padding: 12px 22px; cursor: pointer; display: inline-flex; align-items: center; gap: 9px;
+}
+.cuenta-pedido {
+	background: var(--vino); color: var(--crema); border-radius: 999px;
+	min-width: 22px; padding: 1px 7px; font-size: 12px; text-align: center;
+}
+
+.confirmar {
+	border: none; padding: 30px; max-width: 420px; background: var(--crema); color: var(--vino);
+	font-family: var(--texto);
+}
+/*
+ * El respaldo para navegadores sin '<dialog>' (Safari < 15.4). Ahí 'showModal()' no existe y el
+ * guión cae a mostrarlo con la clase 'sin-soporte'; sin estas dos reglas el diálogo se dibujaría en
+ * el flujo del documento, abajo de todo, donde nadie lo ve. Y como el guión hace 'preventDefault()'
+ * sobre el link de enviar, el cliente apretaría "Seguir en WhatsApp" y no pasaría nada visible.
+ */
+dialog.confirmar:not([open]) { display: none; }
+.confirmar.sin-soporte {
+	display: block;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 50;
+}
+.confirmar::backdrop { background: rgba(74, 31, 46, 0.55); }
+.confirmar h2 { font-size: 28px; }
+.confirmar p { color: var(--vino-claro); margin: 12px 0 22px; }
+.confirmar-botones { display: flex; flex-direction: column; gap: 10px; }
+.accion-fuerte { background: var(--vino); color: var(--crema); }
+.accion-suave { background: transparent; color: var(--vino); }
+
+/* ─────────────────────────────── de acá para arriba, pantallas grandes
+ *
+ * Mobile-first como el clásico: el caso principal es el celular de un cliente.
+ */
+
+@media (min-width: 700px) {
+	.destacados { grid-template-columns: repeat(3, 1fr); }
+	.grilla { grid-template-columns: repeat(2, 1fr); }
+	.pedido-datos { grid-template-columns: repeat(2, 1fr); }
+	.seccion-titulo { grid-template-columns: 1fr 1fr; gap: 40px; }
+	.pie .columnas { grid-template-columns: 1.4fr 1fr 1fr; }
+	.confirmar-botones { flex-direction: row; }
+	.confirmar-botones .accion { flex: 1; }
+}
+
+@media (min-width: 1000px) {
+	body { font-size: 18px; }
+	.grilla { grid-template-columns: repeat(3, 1fr); }
+	.portada { grid-template-columns: 1fr 1fr; align-items: stretch; }
+	/*
+	 * En pantalla ancha el texto de la portada se alinea con el resto de la página en vez de
+	 * pegarse al borde. El cálculo replica lo que hace el envoltorio: la mitad de lo que sobra
+	 * fuera del ancho máximo, más su padding. max(24px, …) evita que quede negativo entre 1000px
+	 * y el ancho máximo, donde no sobra nada que repartir.
+	 */
+	.portada-texto {
+		padding: 76px 40px 90px max(24px, calc((100vw - var(--ancho)) / 2 + 24px));
+	}
+	.portada-foto { min-height: 620px; }
+	.nosotras { grid-template-columns: 1fr 1fr; }
+	.nosotras-foto { min-height: 560px; }
+	.nosotras-texto { padding: 90px 60px; }
+	.encargos .envoltorio { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+	.pasos { margin-top: 0; }
+}
+
+/*
+ * Quien pidió menos movimiento no recibe ninguno. La página casi no anima, pero los ':hover' con
+ * cambio de color siguen siendo movimiento para algunas personas.
+ */
+@media (prefers-reduced-motion: reduce) {
+	* { transition: none !important; animation: none !important; }
+}
+
+/* ─────────────────────────────── esconder, al final de todo
+ *
+ * Sin esta regla el buscador y los filtros no ocultan nada — y así se publicó una vez: el dueño
+ * reportó "los filtros no funcionan".
+ *
+ * El navegador aplica 'display: none' a '[hidden]' desde su hoja por defecto, pero cualquier
+ * 'display' de una hoja de autor le gana, y '.tarjeta' declara 'display: flex'. El guión marca
+ * 't.hidden = true' correctamente y la tarjeta sigue a la vista: el JS hace lo suyo y no se ve nada.
+ *
+ * Va **al final del archivo** y con '!important'. El '!important' debería alcanzar por sí solo en un
+ * navegador de verdad, pero jsdom —donde corren los tests de esta plantilla— resuelve la cascada por
+ * orden y lo ignora. Puesta última, la regla gana en los dos, y el test que la cubre mide
+ * comportamiento en vez de leer el texto del CSS.
+ *
+ * El clásico tiene esta misma regla por la misma razón. Es de lo que se pierde al escribir un CSS
+ * nuevo para un guión compartido: no es una clase que el guión agregue —esas se listan con un
+ * grep— sino un atributo del DOM que el CSS tiene que respetar.
+ */
+[hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<div class="envoltorio">
-	<header>
-		<h1>La Dulcería</h1>
-		<p>Mirá lo que tenemos y sus precios</p>
-	</header>
-	<div class="controles">
+
+<div class="cinta">
+	<div class="envoltorio">
+		<span>Córdoba capital · retiro y envíos</span>
+		<span>Encargos con 48 h de anticipación</span>
+	</div>
+</div>
+
+<header class="encabezado">
+	<div class="envoltorio">
+		<div class="marca">
+			<h1>La Dulcería</h1>
+			<p>HECHO EN CASA</p>
+		</div>
+		<nav class="menu">
+			<a href="#catalogo">Catálogo</a>
+			<a href="#encargos">Encargos</a>
+			<a href="#nosotras">Nosotras</a>
+			<a class="pedir-arriba" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20hacer%20una%20consulta." target="_blank" rel="noopener">Pedir</a>
+			<button type="button" class="ver-pedido" id="ver-pedido" hidden aria-expanded="false" aria-controls="pedido-detalle">Mi pedido<span class="cuenta-pedido" id="cuenta-pedido">0</span></button>
+		</nav>
+	</div>
+</header>
+
+<section class="portada">
+	<div class="envoltorio portada-texto">
+		<p class="volanta">PASTELERÍA ARTESANAL · CÓRDOBA</p>
+		<h2>Tortas y alfajores hechos en casa, todos los días</h2>
+		<p class="bajada">Rogel, chocotorta, pavlova, tartas y cajas materas. Se hornea por pedido, en cantidad chica, con la receta de siempre.</p>
+		<div class="portada-botones">
+			<a class="boton boton-lleno" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20hacer%20una%20consulta." target="_blank" rel="noopener">Pedir por WhatsApp</a>
+			<a class="boton boton-vacio" href="#catalogo">Ver el catálogo</a>
+		</div>
+	</div>
+	<div class="portada-foto">
+		<img src="fotos/seccion-portada-e7fb0151-c429-4773-911a-78e61092a9d0.webp" alt="" width="900" height="1200">
+		<div class="portada-pie">
+			<h3>Pavlova de estación</h3>
+			<p>Merengue, dulce de leche, crema chantilly y frutas.</p>
+		</div>
+	</div>
+</section>
+
+<section class="se-encarga">
+		<div class="envoltorio">
+			<p class="volanta">Se encarga</p>
+			<ul>
+				<li>Cumpleaños</li>
+				<li>Mesas dulces</li>
+				<li>Cajas para regalo</li>
+				<li>Sin gluten</li>
+				<li>Pascua y fechas</li>
+			</ul>
+		</div>
+	</section>
+
+<section class="seccion" id="destacados">
+		<div class="envoltorio">
+			<div class="seccion-titulo">
+				<h2>Lo más pedido</h2>
+				<p>Lo que más se vende estos meses. El resto está en el catálogo.</p>
+			</div>
+			<div class="destacados">
+			<article class="destacado">
+				<figure>
+					<div class="marco"><img src="fotos/f7665f47-87c8-460f-8c2f-4f2a3728d4fe.webp" alt="CARROT CAKE" loading="lazy" width="380" height="380"></div>
+					<figcaption>
+						<h3>CARROT CAKE</h3>
+						<p>Bizcochuelo de zanahoria con frosting de queso crema (22cm)</p>
+					</figcaption>
+				</figure>
+			</article>
+			<article class="destacado">
+				<figure>
+					<div class="marco"><img src="fotos/9e6317e4-6eae-46ea-b2a5-0a90603fd7b9.webp" alt="MASAS SECAS" loading="lazy" width="380" height="380"></div>
+					<figcaption>
+						<h3>MASAS SECAS</h3>
+						<p>1 kg. surtido de masas secas.</p>
+					</figcaption>
+				</figure>
+			</article>
+			<article class="destacado">
+				<figure>
+					<div class="marco"><img src="fotos/241d215f-a412-4bbf-baaf-c50c2e1ca664.webp" alt="CHOCOTORTA XL" loading="lazy" width="380" height="380"></div>
+					<figcaption>
+						<h3>CHOCOTORTA XL</h3>
+						<p>8 Capas de Chocolinas con mezcla de crema de leche y dulce de leche</p>
+					</figcaption>
+				</figure>
+			</article>
+			</div>
+		</div>
+	</section>
+
+<section class="seccion catalogo" id="catalogo">
+	<div class="envoltorio">
+		<div class="seccion-titulo">
+			<div>
+				<p class="volanta">Catálogo</p>
+				<h2>Todo lo que sale del horno</h2>
+			</div>
+			<p>Los precios cambian seguido, así que se consultan por WhatsApp. Tocá el producto y te llega el mensaje ya escrito.</p>
+		</div>
+		<div class="controles">
 			<input id="buscador" type="search" placeholder="Buscar…" aria-label="Buscar en el catálogo" autocomplete="off">
 		</div>
-	<div class="filtros">
-			<button class="filtro" aria-pressed="true">Todas</button>
-			<button class="filtro" data-categoria="Alfajores" aria-pressed="false">Alfajores</button>
+		<div class="filtros">
+			<button class="filtro" aria-pressed="true">Todo</button>
+			<button class="filtro" data-categoria="Box" aria-pressed="false">Box</button>
 			<button class="filtro" data-categoria="Budines" aria-pressed="false">Budines</button>
 			<button class="filtro" data-categoria="Tartas" aria-pressed="false">Tartas</button>
 			<button class="filtro" data-categoria="Tortas" aria-pressed="false">Tortas</button>
 		</div>
-	<div class="pedido" id="pedido" hidden data-telefono="5493515229937" data-generado="18/8/2026" data-tope="20">
-			<div class="pedido-resumen">
-				<span class="pedido-total" id="pedido-total"></span>
-				<span class="visualmente-oculto" id="pedido-anuncio" aria-live="polite" aria-atomic="true"></span>
-				<button type="button" class="pedido-ver" id="pedido-ver" aria-expanded="false" aria-controls="pedido-detalle">Ver</button>
-			</div>
-			<a class="pedir pedido-enviar" id="pedido-enviar" href="#" target="_blank" rel="noopener">Seguir en WhatsApp</a>
-			<p class="pedido-nota" id="pedido-nota"></p>
-			<div class="pedido-detalle" id="pedido-detalle" hidden></div>
+		<div class="pedido" id="pedido" hidden data-telefono="5493515229937" data-generado="29/8/2026" data-publicacion="1788048911151" data-tope="20" data-desde="10:00" data-hasta="19:00" data-cerrados="" data-anticipacion="48">
+		<div class="pedido-resumen">
+			<span class="pedido-total" id="pedido-total"></span>
+			<span class="visualmente-oculto" id="pedido-anuncio" aria-live="polite" aria-atomic="true"></span>
+			<button type="button" class="pedido-ver" id="pedido-ver" aria-expanded="false" aria-controls="pedido-detalle">Ver</button>
+			<button type="button" class="pedido-vaciar" id="pedido-vaciar">Vaciar</button>
 		</div>
-	<div class="grilla">
-			<article class="tarjeta" data-busqueda="ALFAJORES CHIP GRANDES Alfajores grandes de masa con chips de chocolate, rellenos de dulce de leche." data-categoria="Alfajores">
-			
-			<div class="cuerpo">
-				<h2>ALFAJORES CHIP GRANDES</h2>
-				<p class="desc">Alfajores grandes de masa con chips de chocolate, rellenos de dulce de leche.</p>
-				<p class="precio">$ 1.000,00</p>
-				<div class="cantidad" data-id="c6ea2d01-d834-45b8-8bf2-73229c4bef00" data-precio="1000" data-nombre="ALFAJORES CHIP GRANDES">
-					<button type="button" class="menos" aria-label="Quitar una unidad de ALFAJORES CHIP GRANDES" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar ALFAJORES CHIP GRANDES al pedido">+</button>
+		<div class="pedido-datos" id="pedido-datos">
+			<label class="pedido-campo">
+				<span>Tu nombre</span>
+				<input type="text" id="pedido-nombre" autocomplete="name" maxlength="120" placeholder="Juan Pérez">
+			</label>
+			<label class="pedido-campo">
+				<span>Tu celular</span>
+				<input type="tel" id="pedido-celular" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="11 2345-6789">
+			</label>
+			<label class="pedido-campo">
+				<span>Día de entrega</span>
+				<input type="date" id="pedido-dia">
+			</label>
+			<label class="pedido-campo">
+				<span>Hora</span>
+				<input type="time" id="pedido-hora" step="900">
+			</label>
+		</div>
+		<p class="pedido-aviso" id="pedido-aviso" role="status"></p>
+		<div class="pedido-detalle" id="pedido-detalle" hidden></div>
+		<a class="pedir pedido-enviar" id="pedido-enviar" href="#" target="_blank" rel="noopener">Seguir en WhatsApp</a>
+		<p class="pedido-nota" id="pedido-nota"></p>
+	</div>
+		<div class="grilla">
+			<article class="tarjeta" data-busqueda="BOX ALFAJORES MIX (12 Pz) 6 alfajores con chip
+3 maicena 
+3 chocolate" data-categoria="Box">
+				<img src="fotos/5b3454da-67fb-4da2-8520-ae2fa3532a72.webp" alt="BOX ALFAJORES MIX (12 Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>BOX ALFAJORES MIX (12 Pz)</h2>
+					<p class="desc">6 alfajores con chip
+3 maicena 
+3 chocolate</p>
+					<p class="precio">$ 14.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="5b3454da-67fb-4da2-8520-ae2fa3532a72" data-precio="14500" data-nombre="BOX ALFAJORES MIX (12 Pz)" aria-label="Agregar BOX ALFAJORES MIX (12 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BOX%20ALFAJORES%20MIX%20(12%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por BOX ALFAJORES MIX (12 Pz) por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CHIP%20GRANDES" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="ALFAJORES CHOCO GRANDES Alfajores grandes de chocolate rellenos de dulce de leche." data-categoria="Alfajores">
-			
-			<div class="cuerpo">
-				<h2>ALFAJORES CHOCO GRANDES</h2>
-				<p class="desc">Alfajores grandes de chocolate rellenos de dulce de leche.</p>
-				<p class="precio">$ 1.300,00</p>
-				<div class="cantidad" data-id="e32a5d36-c093-4e68-85a2-f43072d93b91" data-precio="1300" data-nombre="ALFAJORES CHOCO GRANDES">
-					<button type="button" class="menos" aria-label="Quitar una unidad de ALFAJORES CHOCO GRANDES" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar ALFAJORES CHOCO GRANDES al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CHOCO%20GRANDES" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="ALFAJORES CON CHIP Alfajores de masa con chips de chocolate y relleno de dulce de leche." data-categoria="Alfajores">
-			
-			<div class="cuerpo">
-				<h2>ALFAJORES CON CHIP</h2>
-				<p class="desc">Alfajores de masa con chips de chocolate y relleno de dulce de leche.</p>
-				<p class="precio">$ 1.700,00</p>
-				<div class="cantidad" data-id="65ad5c2b-0525-449d-9e79-2f9cbbe6c9f6" data-precio="1700" data-nombre="ALFAJORES CON CHIP">
-					<button type="button" class="menos" aria-label="Quitar una unidad de ALFAJORES CON CHIP" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar ALFAJORES CON CHIP al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20CON%20CHIP" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="ALFAJORES DE CHOCOLATE Alfajores de chocolate con dulce de leche. Se venden por unidad." data-categoria="Alfajores">
-			
-			<div class="cuerpo">
-				<h2>ALFAJORES DE CHOCOLATE</h2>
-				<p class="desc">Alfajores de chocolate con dulce de leche. Se venden por unidad.</p>
-				<p class="precio">$ 950,00</p>
-				<div class="cantidad" data-id="df1b0e03-581e-4bac-bb25-d0a5abbbecc8" data-precio="950" data-nombre="ALFAJORES DE CHOCOLATE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de ALFAJORES DE CHOCOLATE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar ALFAJORES DE CHOCOLATE al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ALFAJORES%20DE%20CHOCOLATE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="BISCOCHUELO CUMPLEAÑERO Bizcochuelo para tortas de cumpleaños. Se encarga con anticipación." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>BISCOCHUELO CUMPLEAÑERO</h2>
-				<p class="desc">Bizcochuelo para tortas de cumpleaños. Se encarga con anticipación.</p>
-				<p class="precio">$ 41.500,00</p>
-				<div class="cantidad" data-id="0136d497-a7c9-4903-9b41-041347911360" data-precio="41500" data-nombre="BISCOCHUELO CUMPLEAÑERO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de BISCOCHUELO CUMPLEAÑERO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar BISCOCHUELO CUMPLEAÑERO al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BISCOCHUELO%20CUMPLEA%C3%91ERO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="BROWNIE Brownie de chocolate, húmedo y compacto. Para acompañar el café." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>BROWNIE</h2>
-				<p class="desc">Brownie de chocolate, húmedo y compacto. Para acompañar el café.</p>
-				<p class="precio">$ 28.500,00</p>
-				<div class="cantidad" data-id="a8fcd9bd-dfa4-43c2-bb80-a0708ba89084" data-precio="28500" data-nombre="BROWNIE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de BROWNIE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar BROWNIE al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
+			</article>
 			<article class="tarjeta" data-busqueda="BROWNIE OREO Brownie de chocolate con galletas Oreo." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>BROWNIE OREO</h2>
-				<p class="desc">Brownie de chocolate con galletas Oreo.</p>
-				<p class="precio">$ 29.000,00</p>
-				<div class="cantidad" data-id="f72487d2-8162-4b32-9468-355097b1804d" data-precio="29000" data-nombre="BROWNIE OREO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de BROWNIE OREO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar BROWNIE OREO al pedido">+</button>
+				<img src="fotos/f72487d2-8162-4b32-9468-355097b1804d.webp" alt="BROWNIE OREO" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>BROWNIE OREO</h2>
+					<p class="desc">Brownie de chocolate con galletas Oreo.</p>
+					<p class="precio">$ 36.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="f72487d2-8162-4b32-9468-355097b1804d" data-precio="36000" data-nombre="BROWNIE OREO" aria-label="Agregar BROWNIE OREO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE%20OREO" target="_blank" rel="noopener" aria-label="Consultar por BROWNIE OREO por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE%20OREO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
+			</article>
+			<article class="tarjeta" data-busqueda="BUDIN DE CHOCOLATE Budin de chocolate con cobertura de ganache de chocolate semiamargo" data-categoria="Budines">
+				
+				<div class="cuerpo">
+					<h2>BUDIN DE CHOCOLATE</h2>
+					<p class="desc">Budin de chocolate con cobertura de ganache de chocolate semiamargo</p>
+					<p class="precio">$ 10.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="18a091f9-5ba5-49eb-b736-18bdd11a89b6" data-precio="10000" data-nombre="BUDIN DE CHOCOLATE" aria-label="Agregar BUDIN DE CHOCOLATE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20DE%20CHOCOLATE" target="_blank" rel="noopener" aria-label="Consultar por BUDIN DE CHOCOLATE por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
 			<article class="tarjeta" data-busqueda="BUDIN MANDARINA Budín de mandarina, húmedo y con aroma cítrico." data-categoria="Budines">
-			
-			<div class="cuerpo">
-				<h2>BUDIN MANDARINA</h2>
-				<p class="desc">Budín de mandarina, húmedo y con aroma cítrico.</p>
-				<p class="precio">$ 5.750,00</p>
-				<div class="cantidad" data-id="77935e66-af90-41e2-9447-74a32319fdd1" data-precio="5750" data-nombre="BUDIN MANDARINA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de BUDIN MANDARINA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar BUDIN MANDARINA al pedido">+</button>
+				
+				<div class="cuerpo">
+					<h2>BUDIN MANDARINA</h2>
+					<p class="desc">Budín de mandarina, húmedo y con aroma cítrico.</p>
+					<p class="precio">$ 6.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="77935e66-af90-41e2-9447-74a32319fdd1" data-precio="6500" data-nombre="BUDIN MANDARINA" aria-label="Agregar BUDIN MANDARINA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MANDARINA" target="_blank" rel="noopener" aria-label="Consultar por BUDIN MANDARINA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MANDARINA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
+			</article>
 			<article class="tarjeta" data-busqueda="BUDIN MARMOLADO Budín marmolado de vainilla y chocolate." data-categoria="Budines">
-			
-			<div class="cuerpo">
-				<h2>BUDIN MARMOLADO</h2>
-				<p class="desc">Budín marmolado de vainilla y chocolate.</p>
-				<p class="precio">$ 10.750,00</p>
-				<div class="cantidad" data-id="9de98c9c-235f-4c90-b858-0b0a7474f69f" data-precio="10750" data-nombre="BUDIN MARMOLADO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de BUDIN MARMOLADO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar BUDIN MARMOLADO al pedido">+</button>
+				
+				<div class="cuerpo">
+					<h2>BUDIN MARMOLADO</h2>
+					<p class="desc">Budín marmolado de vainilla y chocolate.</p>
+					<p class="precio">$ 13.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="9de98c9c-235f-4c90-b858-0b0a7474f69f" data-precio="13000" data-nombre="BUDIN MARMOLADO" aria-label="Agregar BUDIN MARMOLADO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MARMOLADO" target="_blank" rel="noopener" aria-label="Consultar por BUDIN MARMOLADO por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MARMOLADO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CAJA MATERA 3 mini alfajores de chocolate, 3 mini alfajores de maicena, 4 rodajas de budin de mandarina o naranja, 2 mini tartas cabsha">
-			
-			<div class="cuerpo">
-				<h2>CAJA MATERA</h2>
-				<p class="desc">3 mini alfajores de chocolate, 3 mini alfajores de maicena, 4 rodajas de budin de mandarina o naranja, 2 mini tartas cabsha</p>
-				<p class="precio">$ 19.500,00</p>
-				<div class="cantidad" data-id="39055172-a7b5-42c4-b149-3073e5c388a4" data-precio="19500" data-nombre="CAJA MATERA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CAJA MATERA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CAJA MATERA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="CARROT CAKE Bizcochuelo de zanahoria con frosting de queso crema (22cm)" data-categoria="Tortas">
+				<img src="fotos/f7665f47-87c8-460f-8c2f-4f2a3728d4fe.webp" alt="CARROT CAKE" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CARROT CAKE</h2>
+					<p class="desc">Bizcochuelo de zanahoria con frosting de queso crema (22cm)</p>
+					<p class="precio">$ 24.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="f7665f47-87c8-460f-8c2f-4f2a3728d4fe" data-precio="24000" data-nombre="CARROT CAKE" aria-label="Agregar CARROT CAKE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CARROT%20CAKE" target="_blank" rel="noopener" aria-label="Consultar por CARROT CAKE por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CAJA%20MATERA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CARROT CAKE Torta de zanahoria con especias y cobertura de queso crema." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>CARROT CAKE</h2>
-				<p class="desc">Torta de zanahoria con especias y cobertura de queso crema.</p>
-				<p class="precio">$ 23.500,00</p>
-				<div class="cantidad" data-id="f7665f47-87c8-460f-8c2f-4f2a3728d4fe" data-precio="23500" data-nombre="CARROT CAKE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CARROT CAKE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CARROT CAKE al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="CHOCOTORTA 4 capas de Chocolinas, con mezcla de dulce de leche y crema. " data-categoria="Tortas">
+				<img src="fotos/d6ec7ba0-d6a4-46ab-8ac1-69422332f7bf.webp" alt="CHOCOTORTA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CHOCOTORTA</h2>
+					<p class="desc">4 capas de Chocolinas, con mezcla de dulce de leche y crema. </p>
+					<p class="precio">$ 38.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="d6ec7ba0-d6a4-46ab-8ac1-69422332f7bf" data-precio="38500" data-nombre="CHOCOTORTA" aria-label="Agregar CHOCOTORTA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA" target="_blank" rel="noopener" aria-label="Consultar por CHOCOTORTA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CARROT%20CAKE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CHOCOTORTA La clásica: capas de chocolinas, dulce de leche y crema. Tamaño familiar." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>CHOCOTORTA</h2>
-				<p class="desc">La clásica: capas de chocolinas, dulce de leche y crema. Tamaño familiar.</p>
-				<p class="precio">$ 36.000,00</p>
-				<div class="cantidad" data-id="d6ec7ba0-d6a4-46ab-8ac1-69422332f7bf" data-precio="36000" data-nombre="CHOCOTORTA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CHOCOTORTA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CHOCOTORTA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="CHOCOTORTA XL 8 Capas de Chocolinas con mezcla de crema de leche y dulce de leche" data-categoria="Tortas">
+				<img src="fotos/241d215f-a412-4bbf-baaf-c50c2e1ca664.webp" alt="CHOCOTORTA XL" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CHOCOTORTA XL</h2>
+					<p class="desc">8 Capas de Chocolinas con mezcla de crema de leche y dulce de leche</p>
+					<p class="precio">$ 53.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="241d215f-a412-4bbf-baaf-c50c2e1ca664" data-precio="53000" data-nombre="CHOCOTORTA XL" aria-label="Agregar CHOCOTORTA XL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%20XL" target="_blank" rel="noopener" aria-label="Consultar por CHOCOTORTA XL por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CHOCOTORTA 22CM Chocotorta en molde de 22 cm, para unas 10 porciones." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>CHOCOTORTA 22CM</h2>
-				<p class="desc">Chocotorta en molde de 22 cm, para unas 10 porciones.</p>
-				<p class="precio">$ 33.000,00</p>
-				<div class="cantidad" data-id="241d215f-a412-4bbf-baaf-c50c2e1ca664" data-precio="33000" data-nombre="CHOCOTORTA 22CM">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CHOCOTORTA 22CM" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CHOCOTORTA 22CM al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="CUPCAKES RED VELVET (6 Pz) Muffins de red velvet con frosting de queso crema" data-categoria="Box">
+				<img src="fotos/49c15242-517d-4d00-87ce-313d87f7aeda.webp" alt="CUPCAKES RED VELVET (6 Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CUPCAKES RED VELVET (6 Pz)</h2>
+					<p class="desc">Muffins de red velvet con frosting de queso crema</p>
+					<p class="precio">$ 13.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="49c15242-517d-4d00-87ce-313d87f7aeda" data-precio="13000" data-nombre="CUPCAKES RED VELVET (6 Pz)" aria-label="Agregar CUPCAKES RED VELVET (6 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20RED%20VELVET%20(6%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES RED VELVET (6 Pz) por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%2022CM" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CHOCOTORTA CHICA Chocotorta en tamaño chico, para 4 a 6 porciones." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>CHOCOTORTA CHICA</h2>
-				<p class="desc">Chocotorta en tamaño chico, para 4 a 6 porciones.</p>
-				<p class="precio">$ 32.500,00</p>
-				<div class="cantidad" data-id="4f8da1f6-b995-41f2-a43a-45199e69e7ca" data-precio="32500" data-nombre="CHOCOTORTA CHICA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CHOCOTORTA CHICA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CHOCOTORTA CHICA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="CUPCAKES VAINILLA (3 Pz) Muffins de vainilla con deco de crema chantilly.
+" data-categoria="Box">
+				<img src="fotos/fad1410d-4696-494c-98f1-7122cb114283.webp" alt="CUPCAKES VAINILLA (3 Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CUPCAKES VAINILLA (3 Pz)</h2>
+					<p class="desc">Muffins de vainilla con deco de crema chantilly.
+</p>
+					<p class="precio">$ 6.250,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="fad1410d-4696-494c-98f1-7122cb114283" data-precio="6250" data-nombre="CUPCAKES VAINILLA (3 Pz)" aria-label="Agregar CUPCAKES VAINILLA (3 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20VAINILLA%20(3%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES VAINILLA (3 Pz) por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%20CHICA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="CUPCAKES RED VELVET Cupcakes red velvet con frosting de queso crema.">
-			
-			<div class="cuerpo">
-				<h2>CUPCAKES RED VELVET</h2>
-				<p class="desc">Cupcakes red velvet con frosting de queso crema.</p>
-				<p class="precio">$ 7.000,00</p>
-				<div class="cantidad" data-id="b9fe70d9-b1d7-4da0-a061-1049bfa9124e" data-precio="7000" data-nombre="CUPCAKES RED VELVET">
-					<button type="button" class="menos" aria-label="Quitar una unidad de CUPCAKES RED VELVET" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar CUPCAKES RED VELVET al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="LEMON PIE Base de masa dulce , crema de limón y merengue italiano" data-categoria="Tartas">
+				<img src="fotos/7d0ae655-fde5-4b76-8ec7-990e187e54e1.webp" alt="LEMON PIE" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>LEMON PIE</h2>
+					<p class="desc">Base de masa dulce , crema de limón y merengue italiano</p>
+					<p class="precio">$ 28.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="7d0ae655-fde5-4b76-8ec7-990e187e54e1" data-precio="28500" data-nombre="LEMON PIE" aria-label="Agregar LEMON PIE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20LEMON%20PIE" target="_blank" rel="noopener" aria-label="Consultar por LEMON PIE por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20RED%20VELVET" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="HUEVO CHOCOTORTA Huevo de chocolate relleno con chocotorta.">
-			
-			<div class="cuerpo">
-				<h2>HUEVO CHOCOTORTA</h2>
-				<p class="desc">Huevo de chocolate relleno con chocotorta.</p>
-				<p class="precio">$ 14.500,00</p>
-				<div class="cantidad" data-id="e8f4250d-7bd4-4b44-857a-aef98db695d6" data-precio="14500" data-nombre="HUEVO CHOCOTORTA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de HUEVO CHOCOTORTA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar HUEVO CHOCOTORTA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="MARQUISE Brownie de chocolate húmedo con dulce de leche y crema chantilly (22cm)" data-categoria="Tortas">
+				<img src="fotos/a8fcd9bd-dfa4-43c2-bb80-a0708ba89084.webp" alt="MARQUISE" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>MARQUISE</h2>
+					<p class="desc">Brownie de chocolate húmedo con dulce de leche y crema chantilly (22cm)</p>
+					<p class="precio">$ 30.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="a8fcd9bd-dfa4-43c2-bb80-a0708ba89084" data-precio="30000" data-nombre="MARQUISE" aria-label="Agregar MARQUISE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE" target="_blank" rel="noopener" aria-label="Consultar por MARQUISE por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20HUEVO%20CHOCOTORTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="HUEVOS OREO Huevos de chocolate rellenos con crema de galletas Oreo.">
-			
-			<div class="cuerpo">
-				<h2>HUEVOS OREO</h2>
-				<p class="desc">Huevos de chocolate rellenos con crema de galletas Oreo.</p>
-				<p class="precio">$ 16.500,00</p>
-				<div class="cantidad" data-id="459f290e-47c3-4637-b6b1-292932d11c1c" data-precio="16500" data-nombre="HUEVOS OREO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de HUEVOS OREO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar HUEVOS OREO al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="MARQUISE (GLUTEN FREE) Brownie de chocolate sin harina, con dulce de leche y crema chantilly. (22cm)" data-categoria="Tortas">
+				<img src="fotos/6b7ab0f5-e3a0-4baf-a036-3d7c77449dfb.webp" alt="MARQUISE (GLUTEN FREE)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>MARQUISE (GLUTEN FREE)</h2>
+					<p class="desc">Brownie de chocolate sin harina, con dulce de leche y crema chantilly. (22cm)</p>
+					<p class="precio">$ 28.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="6b7ab0f5-e3a0-4baf-a036-3d7c77449dfb" data-precio="28000" data-nombre="MARQUISE (GLUTEN FREE)" aria-label="Agregar MARQUISE (GLUTEN FREE) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE%20(GLUTEN%20FREE)" target="_blank" rel="noopener" aria-label="Consultar por MARQUISE (GLUTEN FREE) por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20HUEVOS%20OREO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="LEMON PIE Base crocante, crema de limón y merengue horneado." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>LEMON PIE</h2>
-				<p class="desc">Base crocante, crema de limón y merengue horneado.</p>
-				<p class="precio">$ 23.000,00</p>
-				<div class="cantidad" data-id="303658f0-2323-41c6-8f9b-673b02c9b9aa" data-precio="23000" data-nombre="LEMON PIE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de LEMON PIE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar LEMON PIE al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="MASAS SECAS 1 kg. surtido de masas secas.">
+				<img src="fotos/9e6317e4-6eae-46ea-b2a5-0a90603fd7b9.webp" alt="MASAS SECAS" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>MASAS SECAS</h2>
+					<p class="desc">1 kg. surtido de masas secas.</p>
+					<p class="precio">$ 30.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="9e6317e4-6eae-46ea-b2a5-0a90603fd7b9" data-precio="30000" data-nombre="MASAS SECAS" aria-label="Agregar MASAS SECAS al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MASAS%20SECAS" target="_blank" rel="noopener" aria-label="Consultar por MASAS SECAS por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20LEMON%20PIE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="MARQUISE SIN HARINA (GLUTEN FREE) Marquise de chocolate sin harina, apta para quienes no consumen gluten.">
-			
-			<div class="cuerpo">
-				<h2>MARQUISE SIN HARINA (GLUTEN FREE)</h2>
-				<p class="desc">Marquise de chocolate sin harina, apta para quienes no consumen gluten.</p>
-				<p class="precio">$ 22.500,00</p>
-				<div class="cantidad" data-id="6b7ab0f5-e3a0-4baf-a036-3d7c77449dfb" data-precio="22500" data-nombre="MARQUISE SIN HARINA (GLUTEN FREE)">
-					<button type="button" class="menos" aria-label="Quitar una unidad de MARQUISE SIN HARINA (GLUTEN FREE)" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar MARQUISE SIN HARINA (GLUTEN FREE) al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="PAVLOVA Base de merengue, dulce de leche,  crema Chantilly y frutos rojos  (22 cm)" data-categoria="Tortas">
+				<img src="fotos/680a0cd9-5f6e-449e-971e-1a2186a83e9f.webp" alt="PAVLOVA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>PAVLOVA</h2>
+					<p class="desc">Base de merengue, dulce de leche,  crema Chantilly y frutos rojos  (22 cm)</p>
+					<p class="precio">$ 37.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="680a0cd9-5f6e-449e-971e-1a2186a83e9f" data-precio="37000" data-nombre="PAVLOVA" aria-label="Agregar PAVLOVA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PAVLOVA" target="_blank" rel="noopener" aria-label="Consultar por PAVLOVA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE%20SIN%20HARINA%20(GLUTEN%20FREE)" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="MASAS SECAS Surtido de masas secas para acompañar el té. Se venden por peso.">
-			
-			<div class="cuerpo">
-				<h2>MASAS SECAS</h2>
-				<p class="desc">Surtido de masas secas para acompañar el té. Se venden por peso.</p>
-				<p class="precio">$ 18.000,00</p>
-				<div class="cantidad" data-id="9e6317e4-6eae-46ea-b2a5-0a90603fd7b9" data-precio="18000" data-nombre="MASAS SECAS">
-					<button type="button" class="menos" aria-label="Quitar una unidad de MASAS SECAS" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar MASAS SECAS al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="ROGEL 10 discos de masa, dulce de leche y merengue italiano" data-categoria="Tortas">
+				<img src="fotos/e6c67e74-658c-4ee7-8c3f-2ce14d53c72a.webp" alt="ROGEL" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>ROGEL</h2>
+					<p class="desc">10 discos de masa, dulce de leche y merengue italiano</p>
+					<p class="precio">$ 37.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="e6c67e74-658c-4ee7-8c3f-2ce14d53c72a" data-precio="37000" data-nombre="ROGEL" aria-label="Agregar ROGEL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ROGEL" target="_blank" rel="noopener" aria-label="Consultar por ROGEL por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MASAS%20SECAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="MINI ROGEL Rogel individual: capas finas de masa, dulce de leche y merengue." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>MINI ROGEL</h2>
-				<p class="desc">Rogel individual: capas finas de masa, dulce de leche y merengue.</p>
-				<p class="precio">$ 18.000,00</p>
-				<div class="cantidad" data-id="a4fba7fb-4505-4f8b-affa-396af7cebae0" data-precio="18000" data-nombre="MINI ROGEL">
-					<button type="button" class="menos" aria-label="Quitar una unidad de MINI ROGEL" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar MINI ROGEL al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TARTA CABSHA Base de masa dulce, dulce de leche y ganache de chocolate negro " data-categoria="Tartas">
+				<img src="fotos/104a4444-adb6-4fc5-8963-5aba9cc20972.webp" alt="TARTA CABSHA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TARTA CABSHA</h2>
+					<p class="desc">Base de masa dulce, dulce de leche y ganache de chocolate negro </p>
+					<p class="precio">$ 30.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="104a4444-adb6-4fc5-8963-5aba9cc20972" data-precio="30500" data-nombre="TARTA CABSHA" aria-label="Agregar TARTA CABSHA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20CABSHA" target="_blank" rel="noopener" aria-label="Consultar por TARTA CABSHA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MINI%20ROGEL" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="MUFFINS CON FRAMBUESAS Muffins caseros con frambuesas. Se venden por unidad.">
-			
-			<div class="cuerpo">
-				<h2>MUFFINS CON FRAMBUESAS</h2>
-				<p class="desc">Muffins caseros con frambuesas. Se venden por unidad.</p>
-				<p class="precio">$ 25.000,00</p>
-				<div class="cantidad" data-id="18e214f7-d149-4324-8c15-97dd1102ac23" data-precio="25000" data-nombre="MUFFINS CON FRAMBUESAS">
-					<button type="button" class="menos" aria-label="Quitar una unidad de MUFFINS CON FRAMBUESAS" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar MUFFINS CON FRAMBUESAS al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TARTA DE COCO Base de masa dulce, dulce de leche y coco" data-categoria="Tartas">
+				<img src="fotos/764ea8af-3c54-45aa-8ce0-56be21779230.webp" alt="TARTA DE COCO" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TARTA DE COCO</h2>
+					<p class="desc">Base de masa dulce, dulce de leche y coco</p>
+					<p class="precio">$ 31.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="764ea8af-3c54-45aa-8ce0-56be21779230" data-precio="31500" data-nombre="TARTA DE COCO" aria-label="Agregar TARTA DE COCO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20COCO" target="_blank" rel="noopener" aria-label="Consultar por TARTA DE COCO por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MUFFINS%20CON%20FRAMBUESAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="PAVLOVA Torta en base de merengue, dulce de leche, crema cahntilly y frutas de estacion" data-categoria="Tortas">
-			<img src="fotos/680a0cd9-5f6e-449e-971e-1a2186a83e9f.webp" alt="PAVLOVA" loading="lazy" width="400" height="200">
-			<div class="cuerpo">
-				<h2>PAVLOVA</h2>
-				<p class="desc">Torta en base de merengue, dulce de leche, crema cahntilly y frutas de estacion</p>
-				<p class="precio">$ 36.500,00</p>
-				<div class="cantidad" data-id="680a0cd9-5f6e-449e-971e-1a2186a83e9f" data-precio="36500" data-nombre="PAVLOVA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de PAVLOVA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar PAVLOVA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TARTA DE DURAZNO Base de masa dulce , dulce de leche, crema chantilly y duraznos" data-categoria="Tartas">
+				<img src="fotos/e81ae2c1-19c2-4bd9-9b94-acbc700f9bc6.webp" alt="TARTA DE DURAZNO" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TARTA DE DURAZNO</h2>
+					<p class="desc">Base de masa dulce , dulce de leche, crema chantilly y duraznos</p>
+					<p class="precio">$ 34.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="e81ae2c1-19c2-4bd9-9b94-acbc700f9bc6" data-precio="34000" data-nombre="TARTA DE DURAZNO" aria-label="Agregar TARTA DE DURAZNO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20DURAZNO" target="_blank" rel="noopener" aria-label="Consultar por TARTA DE DURAZNO por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PAVLOVA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="PRALINE Mani con cobertura de caramelo x 200 gramos">
-			
-			<div class="cuerpo">
-				<h2>PRALINE</h2>
-				<p class="desc">Mani con cobertura de caramelo x 200 gramos</p>
-				<p class="precio">$ 3.000,00</p>
-				<div class="cantidad" data-id="108f14cd-7179-4b6e-a3ec-cdda5e7be47a" data-precio="3000" data-nombre="PRALINE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de PRALINE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar PRALINE al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TARTA DE FRUTILLA Base masa dulce, dulce de leche, crema chantilly y frutillas" data-categoria="Tartas">
+				<img src="fotos/c191ef55-1126-4705-9eb9-4a2355697a75.webp" alt="TARTA DE FRUTILLA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TARTA DE FRUTILLA</h2>
+					<p class="desc">Base masa dulce, dulce de leche, crema chantilly y frutillas</p>
+					<p class="precio">$ 34.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="c191ef55-1126-4705-9eb9-4a2355697a75" data-precio="34000" data-nombre="TARTA DE FRUTILLA" aria-label="Agregar TARTA DE FRUTILLA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20FRUTILLA" target="_blank" rel="noopener" aria-label="Consultar por TARTA DE FRUTILLA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PRALINE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="ROGEL Torta rogel de capas finas con dulce de leche y merengue italiano." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>ROGEL</h2>
-				<p class="desc">Torta rogel de capas finas con dulce de leche y merengue italiano.</p>
-				<p class="precio">$ 35.500,00</p>
-				<div class="cantidad" data-id="e6c67e74-658c-4ee7-8c3f-2ce14d53c72a" data-precio="35500" data-nombre="ROGEL">
-					<button type="button" class="menos" aria-label="Quitar una unidad de ROGEL" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar ROGEL al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TARTA DE MANZANA/PERA base de masa dulce, compota de pera o manzana y crumble." data-categoria="Tartas">
+				<img src="fotos/a61f086e-a3a3-4bc4-95e7-8523dfd9d629.webp" alt="TARTA DE MANZANA/PERA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TARTA DE MANZANA/PERA</h2>
+					<p class="desc">base de masa dulce, compota de pera o manzana y crumble.</p>
+					<p class="precio">$ 24.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="a61f086e-a3a3-4bc4-95e7-8523dfd9d629" data-precio="24500" data-nombre="TARTA DE MANZANA/PERA" aria-label="Agregar TARTA DE MANZANA/PERA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20MANZANA%2FPERA" target="_blank" rel="noopener" aria-label="Consultar por TARTA DE MANZANA/PERA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ROGEL" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TABLETA PASCUA ROCKLET Tableta de chocolate con rocklets, para Pascua.">
-			
-			<div class="cuerpo">
-				<h2>TABLETA PASCUA ROCKLET</h2>
-				<p class="desc">Tableta de chocolate con rocklets, para Pascua.</p>
-				<p class="precio">$ 12.250,00</p>
-				<div class="cantidad" data-id="b5399dc0-9b01-4db7-9425-e699f8afee4c" data-precio="12250" data-nombre="TABLETA PASCUA ROCKLET">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TABLETA PASCUA ROCKLET" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TABLETA PASCUA ROCKLET al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TIRAMISU Base de vainillas ,  embebidas en almibar de café y crema de mascarpone.">
+				<img src="fotos/1078de54-6586-4e78-b44d-048fba454678.webp" alt="TIRAMISU" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TIRAMISU</h2>
+					<p class="desc">Base de vainillas ,  embebidas en almibar de café y crema de mascarpone.</p>
+					<p class="precio">$ 28.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="1078de54-6586-4e78-b44d-048fba454678" data-precio="28000" data-nombre="TIRAMISU" aria-label="Agregar TIRAMISU al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU" target="_blank" rel="noopener" aria-label="Consultar por TIRAMISU por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TABLETA%20PASCUA%20ROCKLET" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TABLETAS CHICAS Tabletas de chocolate en tamaño chico.">
-			
-			<div class="cuerpo">
-				<h2>TABLETAS CHICAS</h2>
-				<p class="desc">Tabletas de chocolate en tamaño chico.</p>
-				<p class="precio">$ 5.000,00</p>
-				<div class="cantidad" data-id="c7327980-6668-4449-b737-bd8c2a3726fc" data-precio="5000" data-nombre="TABLETAS CHICAS">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TABLETAS CHICAS" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TABLETAS CHICAS al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TIRAMISU XL Base de vainillas, embebidas en almíbar de café y relleno de crema mascarpone.">
+				<img src="fotos/26256176-b997-4fe8-ab4e-020cda39ce2d.webp" alt="TIRAMISU XL" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TIRAMISU XL</h2>
+					<p class="desc">Base de vainillas, embebidas en almíbar de café y relleno de crema mascarpone.</p>
+					<p class="precio">$ 39.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="26256176-b997-4fe8-ab4e-020cda39ce2d" data-precio="39500" data-nombre="TIRAMISU XL" aria-label="Agregar TIRAMISU XL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU%20XL" target="_blank" rel="noopener" aria-label="Consultar por TIRAMISU XL por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TABLETAS%20CHICAS" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TARTA CABSHA Tarta de chocolate con relleno estilo cabsha y base crocante." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>TARTA CABSHA</h2>
-				<p class="desc">Tarta de chocolate con relleno estilo cabsha y base crocante.</p>
-				<p class="precio">$ 30.500,00</p>
-				<div class="cantidad" data-id="104a4444-adb6-4fc5-8963-5aba9cc20972" data-precio="30500" data-nombre="TARTA CABSHA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TARTA CABSHA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TARTA CABSHA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TORTA BLACK Base húmeda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
+" data-categoria="Tortas">
+				<img src="fotos/0136d497-a7c9-4903-9b41-041347911360.webp" alt="TORTA BLACK" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TORTA BLACK</h2>
+					<p class="desc">Base húmeda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
+</p>
+					<p class="precio">$ 46.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="0136d497-a7c9-4903-9b41-041347911360" data-precio="46500" data-nombre="TORTA BLACK" aria-label="Agregar TORTA BLACK al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20BLACK" target="_blank" rel="noopener" aria-label="Consultar por TORTA BLACK por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20CABSHA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TARTA DE COCO Tarta de coco con base de masa dulce." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>TARTA DE COCO</h2>
-				<p class="desc">Tarta de coco con base de masa dulce.</p>
-				<p class="precio">$ 30.500,00</p>
-				<div class="cantidad" data-id="764ea8af-3c54-45aa-8ce0-56be21779230" data-precio="30500" data-nombre="TARTA DE COCO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TARTA DE COCO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TARTA DE COCO al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TORTA CLASICA Bizcochuelo de vainilla húmedo , con dos cortes de relleno, uno de crema bariloche y otro de crema. Decorado con crema." data-categoria="Tortas">
+				<img src="fotos/27f5c82f-b2ff-4612-a167-e7d2e18e4549.webp" alt="TORTA CLASICA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TORTA CLASICA</h2>
+					<p class="desc">Bizcochuelo de vainilla húmedo , con dos cortes de relleno, uno de crema bariloche y otro de crema. Decorado con crema.</p>
+					<p class="precio">$ 35.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="27f5c82f-b2ff-4612-a167-e7d2e18e4549" data-precio="35000" data-nombre="TORTA CLASICA" aria-label="Agregar TORTA CLASICA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20CLASICA" target="_blank" rel="noopener" aria-label="Consultar por TORTA CLASICA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20COCO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TARTA DE DURAZNO Tarta de masa dulce con duraznos y crema pastelera." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>TARTA DE DURAZNO</h2>
-				<p class="desc">Tarta de masa dulce con duraznos y crema pastelera.</p>
-				<p class="precio">$ 34.000,00</p>
-				<div class="cantidad" data-id="e81ae2c1-19c2-4bd9-9b94-acbc700f9bc6" data-precio="34000" data-nombre="TARTA DE DURAZNO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TARTA DE DURAZNO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TARTA DE DURAZNO al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TORTA CUMPLEAÑERA Bizcochuelo húmedo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elección) y el otro con crema con (frutilla o durazno, a elección).
+Decorada con crema " data-categoria="Tortas">
+				<img src="fotos/0819f294-07bf-420b-97aa-fa5212dd7249.webp" alt="TORTA CUMPLEAÑERA" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TORTA CUMPLEAÑERA</h2>
+					<p class="desc">Bizcochuelo húmedo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elección) y el otro con crema con (frutilla o durazno, a elección).
+Decorada con crema </p>
+					<p class="precio">$ 38.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="0819f294-07bf-420b-97aa-fa5212dd7249" data-precio="38000" data-nombre="TORTA CUMPLEAÑERA" aria-label="Agregar TORTA CUMPLEAÑERA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20CUMPLEA%C3%91ERA" target="_blank" rel="noopener" aria-label="Consultar por TORTA CUMPLEAÑERA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20DURAZNO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TARTA DE MANZANA/PERA Tarta de manzana o pera sobre base de masa dulce. Consultá disponibilidad." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>TARTA DE MANZANA/PERA</h2>
-				<p class="desc">Tarta de manzana o pera sobre base de masa dulce. Consultá disponibilidad.</p>
-				<p class="precio">$ 23.000,00</p>
-				<div class="cantidad" data-id="a61f086e-a3a3-4bc4-95e7-8523dfd9d629" data-precio="23000" data-nombre="TARTA DE MANZANA/PERA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TARTA DE MANZANA/PERA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TARTA DE MANZANA/PERA al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TORTA DE NUEZ (GLUTEN FREE) Base de nuez suave y húmeda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces." data-categoria="Tortas">
+				<img src="fotos/f634b567-ff79-4f48-b13f-25071c131e3e.webp" alt="TORTA DE NUEZ (GLUTEN FREE)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TORTA DE NUEZ (GLUTEN FREE)</h2>
+					<p class="desc">Base de nuez suave y húmeda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces.</p>
+					<p class="precio">$ 23.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="f634b567-ff79-4f48-b13f-25071c131e3e" data-precio="23000" data-nombre="TORTA DE NUEZ (GLUTEN FREE)" aria-label="Agregar TORTA DE NUEZ (GLUTEN FREE) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20DE%20NUEZ%20(GLUTEN%20FREE)" target="_blank" rel="noopener" aria-label="Consultar por TORTA DE NUEZ (GLUTEN FREE) por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20MANZANA%2FPERA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TARTA DE RICOTA Tarta de ricota casera, suave y poco dulce." data-categoria="Tartas">
-			
-			<div class="cuerpo">
-				<h2>TARTA DE RICOTA</h2>
-				<p class="desc">Tarta de ricota casera, suave y poco dulce.</p>
-				<p class="precio">$ 20.000,00</p>
-				<div class="cantidad" data-id="e1e1dfa5-c1d6-4eb9-a1fb-e58bd9a6327a" data-precio="20000" data-nombre="TARTA DE RICOTA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TARTA DE RICOTA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TARTA DE RICOTA al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20RICOTA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TIRAMISU Tiramisú con capas de bizcocho embebido en café y crema de mascarpone.">
-			
-			<div class="cuerpo">
-				<h2>TIRAMISU</h2>
-				<p class="desc">Tiramisú con capas de bizcocho embebido en café y crema de mascarpone.</p>
-				<p class="precio">$ 25.500,00</p>
-				<div class="cantidad" data-id="1078de54-6586-4e78-b44d-048fba454678" data-precio="25500" data-nombre="TIRAMISU">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TIRAMISU" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TIRAMISU al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TIRAMISU GRANDE Tiramisú en tamaño grande, para compartir.">
-			
-			<div class="cuerpo">
-				<h2>TIRAMISU GRANDE</h2>
-				<p class="desc">Tiramisú en tamaño grande, para compartir.</p>
-				<p class="precio">$ 34.500,00</p>
-				<div class="cantidad" data-id="26256176-b997-4fe8-ab4e-020cda39ce2d" data-precio="34500" data-nombre="TIRAMISU GRANDE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TIRAMISU GRANDE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TIRAMISU GRANDE al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU%20GRANDE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TORTA DE NUEZ Torta de nueces con relleno de dulce de leche." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>TORTA DE NUEZ</h2>
-				<p class="desc">Torta de nueces con relleno de dulce de leche.</p>
-				<p class="precio">$ 22.500,00</p>
-				<div class="cantidad" data-id="f634b567-ff79-4f48-b13f-25071c131e3e" data-precio="22500" data-nombre="TORTA DE NUEZ">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TORTA DE NUEZ" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TORTA DE NUEZ al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20DE%20NUEZ" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
+			</article>
 			<article class="tarjeta" data-busqueda="TORTA MATERA DE ZANAHORIA SIN HARINA Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>TORTA MATERA DE ZANAHORIA SIN HARINA</h2>
-				<p class="desc">Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten.</p>
-				<p class="precio">$ 9.500,00</p>
-				<div class="cantidad" data-id="675ed20d-fcd2-431a-ac98-e3330ef03ea7" data-precio="9500" data-nombre="TORTA MATERA DE ZANAHORIA SIN HARINA">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TORTA MATERA DE ZANAHORIA SIN HARINA" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TORTA MATERA DE ZANAHORIA SIN HARINA al pedido">+</button>
+				
+				<div class="cuerpo">
+					<h2>TORTA MATERA DE ZANAHORIA SIN HARINA</h2>
+					<p class="desc">Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten.</p>
+					<p class="precio">$ 9.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="675ed20d-fcd2-431a-ac98-e3330ef03ea7" data-precio="9500" data-nombre="TORTA MATERA DE ZANAHORIA SIN HARINA" aria-label="Agregar TORTA MATERA DE ZANAHORIA SIN HARINA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20MATERA%20DE%20ZANAHORIA%20SIN%20HARINA" target="_blank" rel="noopener" aria-label="Consultar por TORTA MATERA DE ZANAHORIA SIN HARINA por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20MATERA%20DE%20ZANAHORIA%20SIN%20HARINA" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TORTA PIONONO Torta de pionono enrollado con relleno de dulce de leche." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>TORTA PIONONO</h2>
-				<p class="desc">Torta de pionono enrollado con relleno de dulce de leche.</p>
-				<p class="precio">$ 27.000,00</p>
-				<div class="cantidad" data-id="76aed50e-234e-4ed2-8eec-c771120dc08c" data-precio="27000" data-nombre="TORTA PIONONO">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TORTA PIONONO" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TORTA PIONONO al pedido">+</button>
+			</article>
+			<article class="tarjeta" data-busqueda="TORTA PIONONO Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elección), decorado con crema chantilly. (TIPO CHAJA)" data-categoria="Tortas">
+				<img src="fotos/76aed50e-234e-4ed2-8eec-c771120dc08c.webp" alt="TORTA PIONONO" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>TORTA PIONONO</h2>
+					<p class="desc">Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elección), decorado con crema chantilly. (TIPO CHAJA)</p>
+					<p class="precio">$ 31.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="76aed50e-234e-4ed2-8eec-c771120dc08c" data-precio="31000" data-nombre="TORTA PIONONO" aria-label="Agregar TORTA PIONONO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20PIONONO" target="_blank" rel="noopener" aria-label="Consultar por TORTA PIONONO por WhatsApp">Consultar</a></div>
 				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20PIONONO" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TORTA RECTANGULAR PIONON Torta rectangular de pionono con dulce de leche. Ideal para cumpleaños." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>TORTA RECTANGULAR PIONON</h2>
-				<p class="desc">Torta rectangular de pionono con dulce de leche. Ideal para cumpleaños.</p>
-				<p class="precio">$ 35.000,00</p>
-				<div class="cantidad" data-id="c412cf94-7fa1-491e-8e58-2259c0b3467b" data-precio="35000" data-nombre="TORTA RECTANGULAR PIONON">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TORTA RECTANGULAR PIONON" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TORTA RECTANGULAR PIONON al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20RECTANGULAR%20PIONON" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
-			<article class="tarjeta" data-busqueda="TRIPLE CHOCOLATE Tres capas de chocolate: bizcocho, ganache y cobertura." data-categoria="Tortas">
-			
-			<div class="cuerpo">
-				<h2>TRIPLE CHOCOLATE</h2>
-				<p class="desc">Tres capas de chocolate: bizcocho, ganache y cobertura.</p>
-				<p class="precio">$ 47.000,00</p>
-				<div class="cantidad" data-id="42d15228-1668-4dc3-be1f-999339b5e760" data-precio="47000" data-nombre="TRIPLE CHOCOLATE">
-					<button type="button" class="menos" aria-label="Quitar una unidad de TRIPLE CHOCOLATE" disabled>−</button>
-					<span class="cuenta">0</span>
-					<button type="button" class="mas" aria-label="Agregar TRIPLE CHOCOLATE al pedido">+</button>
-				</div>
-				<a class="pedir" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TRIPLE%20CHOCOLATE" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			</div>
-		</article>
+			</article>
 		</div>
 		<p class="vacio" id="sin-resultados" hidden>No encontramos nada con esa búsqueda.</p>
-	<footer>Precios actualizados al 18/8/2026</footer>
-</div>
+	</div>
+</section>
+
+<section class="encargos" id="encargos">
+	<div class="envoltorio">
+		<div>
+			<p class="volanta">Encargos</p>
+			<h2>Para cumpleaños y mesas dulces</h2>
+			<p class="texto">Se coordina por WhatsApp: elegís el sabor y el tamaño, y se acuerda el día de retiro. Las tortas grandes y las mesas dulces necesitan 48 horas.</p>
+			<a class="boton boton-lleno" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20hacer%20una%20consulta." target="_blank" rel="noopener">Hacer un encargo</a>
+		</div>
+		<div class="pasos">
+			<div class="paso">
+					<span class="numero">01</span>
+					<div>
+						<h3>Escribinos qué necesitás</h3>
+						<p>Ocasión, cantidad de porciones y fecha. Si no sabés qué elegir, te sugerimos.</p>
+					</div>
+				</div>
+				<div class="paso">
+					<span class="numero">02</span>
+					<div>
+						<h3>Te pasamos precio y seña</h3>
+						<p>La seña reserva la fecha. Transferencia o efectivo.</p>
+					</div>
+				</div>
+				<div class="paso">
+					<span class="numero">03</span>
+					<div>
+						<h3>Retirás o te lo llevamos</h3>
+						<p>Retiro en el barrio o envío a coordinar dentro de Córdoba capital.</p>
+					</div>
+				</div>
+		</div>
+	</div>
+</section>
+
+<section class="nosotras" id="nosotras">
+	<div class="nosotras-foto"></div>
+	<div class="nosotras-texto">
+		<p class="volanta">Nosotras</p>
+		<h2>Una cocina de casa, no una fábrica</h2>
+		<p>Todo se hace en cantidad chica, el día anterior o el mismo día. Por eso hay cosas que se encargan y otras que se avisan por Instagram cuando salen del horno.</p>
+		<p>Si querés algo que no está en el catálogo, preguntá igual: casi siempre se puede.</p>
+		<a class="instagram" href="https://instagram.com/ladulceria.hechoencasa" target="_blank" rel="noopener">Ver el Instagram</a>
+	</div>
+</section>
+
+<footer class="pie">
+	<div class="envoltorio">
+		<div class="columnas">
+			<div>
+				<h2>La Dulcería</h2>
+				<p class="bajada">HECHO EN CASA</p>
+			</div>
+			<div>
+				<p class="volanta">Contacto</p>
+				<p>WhatsApp 351 522 9937</p>
+				<p><a href="https://instagram.com/ladulceria.hechoencasa" target="_blank" rel="noopener">@ladulceria.hechoencasa</a></p>
+			</div>
+			<div>
+				<p class="volanta">Pedidos</p>
+				<p>De 10:00 a 19:00 h</p>
+				<p>Encargos: 48 h de anticipación</p>
+			</div>
+		</div>
+		<p class="legal">Precios actualizados al 29/8/2026</p>
+	</div>
+</footer>
+
+<dialog class="confirmar" id="pedido-confirmar" aria-labelledby="pedido-confirmar-titulo">
+	<h2 id="pedido-confirmar-titulo">¿Desea agregar otro producto?</h2>
+	<p>Si querés seguir mirando, tu pedido queda guardado.</p>
+	<div class="confirmar-botones">
+		<button type="button" class="accion accion-fuerte" id="pedido-confirmar-enviar">No, enviar el pedido</button>
+		<button type="button" class="accion accion-suave" id="pedido-confirmar-seguir">Sí, sigo agregando</button>
+	</div>
+</dialog>
 <script>
 (function () {
 	var buscador = document.getElementById('buscador');
@@ -873,12 +1067,56 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 	var elNota = document.getElementById('pedido-nota');
 	var elDetalle = document.getElementById('pedido-detalle');
 	var elVer = document.getElementById('pedido-ver');
+	var elVaciar = document.getElementById('pedido-vaciar');
+	// Las funciones de repintado de cada tarjeta. 'Vaciar' las llama a todas: sin esto, poner las
+	// cantidades en cero dejaria los contadores de las tarjetas mostrando lo de antes.
+	// Las funciones que repintan el boton de cada tarjeta, indexadas por id.
+	//
+	// Una sola estructura y no dos: hubo un momento en que existia tambien un array con las mismas
+	// funciones, para que "Vaciar" pudiera recorrerlas todas. Dos estructuras paralelas llenadas en
+	// el mismo lugar son exactamente lo que este archivo se propone evitar —un cambio futuro que
+	// filtre una y no la otra las desalinea en silencio—, y el objeto sirve para los dos usos:
+	// recorrerlo entero al vaciar, y buscar por id cuando los +/- del detalle repintan su tarjeta.
+	var repintarTarjeta = {};
 	var elEnviar = document.getElementById('pedido-enviar');
+	// El acceso al pedido desde el encabezado fijo. Hace falta porque el pedido ahora sobrevive a
+	// una recarga: quien vuelve con cosas cargadas tiene que poder abrirlas sin agregar otra.
+	var elVerArriba = document.getElementById('ver-pedido');
+	var elCuentaArriba = document.getElementById('cuenta-pedido');
 	var buscador = document.getElementById('buscador');
+	var elNombre = document.getElementById('pedido-nombre');
+	var elCelular = document.getElementById('pedido-celular');
+	var elDia = document.getElementById('pedido-dia');
+	var elHora = document.getElementById('pedido-hora');
+	var elAviso = document.getElementById('pedido-aviso');
 
 	var TOPE = Number(barra.getAttribute('data-tope')) || 20;
 	var telefono = barra.getAttribute('data-telefono') || '';
 	var generadoEl = barra.getAttribute('data-generado') || '';
+	/*
+	 * La llave que ata el pedido guardado a ESTA publicacion.
+	 *
+	 * Separada de 'generadoEl' porque esa es una fecha sin hora, y el dia mas probable para
+	 * republicar es el mismo en que se publico —el dueno ve un precio mal y corrige—. Con la fecha
+	 * sola, las dos versiones se ven identicas y el pedido viejo sobrevive a la republicacion que
+	 * justamente tenia que descartarlo.
+	 */
+	var publicacion = barra.getAttribute('data-publicacion') || generadoEl;
+
+	/*
+	 * La ventana de entrega, horneada al generar el archivo.
+	 *
+	 * **Estos valores son los de la ultima generacion.** Este HTML no tiene backend: si el dueno
+	 * cambia el horario, el catalogo publicado sigue con el viejo hasta que lo regenere. Misma
+	 * limitacion que los precios, y por el mismo motivo.
+	 */
+	var ATIENDE_DESDE = barra.getAttribute('data-desde') || '';
+	var ATIENDE_HASTA = barra.getAttribute('data-hasta') || '';
+	var ANTICIPACION = Number(barra.getAttribute('data-anticipacion')) || 0;
+	var DIAS_CERRADOS = (barra.getAttribute('data-cerrados') || '')
+		.split(',')
+		.filter(function (s) { return s !== ''; })
+		.map(function (s) { return parseInt(s, 10); });
 
 	/*
 	 * **La caducidad se calcula acá, en el navegador, y no en el servidor.**
@@ -909,8 +1147,148 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 		return Math.round((inicioDeHoy.getTime() - generado.getTime()) / 86400000) > DIAS_PARA_VENCER;
 	}
 
-	// { id: { nombre, precio, cantidad } }. La única fuente de verdad del pedido.
+	// { id: { id, nombre, precio, cantidad } }. La única fuente de verdad del pedido.
 	var pedido = {};
+
+	/*
+	 * ─────────────────────────────────────────────────────────────────────────────────────────
+	 * El pedido sobrevive a una recarga.
+	 *
+	 * M20 habia decidido lo contrario, y con un motivo real: guardar el pedido traia el problema
+	 * de items guardados con precios que ya cambiaron. El dueno pidio la persistencia igual, asi
+	 * que el riesgo se resuelve en vez de heredarse.
+	 *
+	 * **Se guardan cantidades, nunca precios.** El precio sale siempre del data-precio de la
+	 * tarjeta que este en el documento ahora. Como nunca se guardo, no hay forma de que un precio
+	 * viejo llegue al mensaje de WhatsApp.
+	 *
+	 * Y ademas, tres filtros al volver:
+	 *   1. Si el catalogo se regenero (cambio data-generado), lo guardado se descarta entero.
+	 *   2. Solo se rehidratan los ids que siguen existiendo como tarjeta.
+	 *   3. La cantidad se recorta al TOPE actual por si bajo desde la ultima visita.
+	 * ─────────────────────────────────────────────────────────────────────────────────────────
+	 */
+
+	var LLAVE = 'pedido-catalogo';
+
+	/*
+	 * Todo acceso a localStorage va envuelto.
+	 *
+	 * No es defensa de mas: en Safari con navegacion privada, 'localStorage' **existe** pero
+	 * 'setItem' tira QuotaExceededError, y con las cookies bloqueadas el solo hecho de leer
+	 * 'window.localStorage' tira SecurityError. Sin el try, el catalogo entero deja de funcionar
+	 * —incluido el buscador— para el cliente que abre el link en una pestana privada, que es
+	 * exactamente lo que hace mucha gente con un link que le mandaron.
+	 */
+	function guardar() {
+		try {
+			var cantidades = {};
+			var hay = false;
+			for (var id in pedido) {
+				if (Object.prototype.hasOwnProperty.call(pedido, id) && pedido[id].cantidad > 0) {
+					cantidades[id] = pedido[id].cantidad;
+					hay = true;
+				}
+			}
+			if (!hay) {
+				window.localStorage.removeItem(LLAVE);
+				return;
+			}
+			// 'generado' es lo que ata lo guardado a **esta** version del catalogo.
+			window.localStorage.setItem(LLAVE, JSON.stringify({ generado: publicacion, cantidades: cantidades }));
+		} catch (e) {
+			/* Sin persistencia, pero el catalogo sigue andando. */
+		}
+	}
+
+	function rehidratar() {
+		var guardado;
+		try {
+			guardado = window.localStorage.getItem(LLAVE);
+		} catch (e) {
+			return;
+		}
+		if (!guardado) return;
+
+		var datos;
+		try {
+			datos = JSON.parse(guardado);
+		} catch (e) {
+			// Un valor corrupto (otra version, o alguien que lo edito a mano) se tira y se sigue.
+			try {
+				window.localStorage.removeItem(LLAVE);
+			} catch (e2) {
+				/* nada que hacer */
+			}
+			return;
+		}
+
+		/*
+		 * El catalogo se regenero: lo guardado se descarta entero.
+		 *
+		 * Es el filtro que hace segura a la persistencia. Un catalogo republicado puede traer otros
+		 * precios, otros productos u otra ventana de entrega, y no hay forma de saber cual de esas
+		 * cosas cambio. Empezar limpio es la unica opcion que no miente.
+		 */
+		if (!datos || datos.generado !== publicacion || !datos.cantidades) {
+			try {
+				window.localStorage.removeItem(LLAVE);
+			} catch (e) {
+				/* nada que hacer */
+			}
+			return;
+		}
+
+		var saneado = false;
+
+		for (var id in datos.cantidades) {
+			if (!Object.prototype.hasOwnProperty.call(datos.cantidades, id)) continue;
+
+			/*
+			 * 'hasOwnProperty' contra 'pedido', y no un simple 'if (!pedido[id])'.
+			 *
+			 * Este guard existe para saltear productos despublicados, pero con el chequeo truthy se
+			 * lo podia burlar con una clave heredada de Object.prototype. Con
+			 * '{"__proto__": 5}' guardado: 'pedido["__proto__"]' devuelve Object.prototype, que es
+			 * truthy, el guard no frena, y abajo 'repintarTarjeta["__proto__"]' tampoco es funcion
+			 * — TypeError que escapa de rehidratar() y aborta el guion entero ANTES de registrar
+			 * los listeners. El catalogo queda muerto: no se puede agregar, ni vaciar, ni enviar. Y
+			 * como el valor sigue guardado, vuelve a romper en cada recarga, sin salida desde la UI.
+			 *
+			 * Con 'constructor' en vez de '__proto__' es peor porque es silencioso: escribe
+			 * '.cantidad' sobre el objeto Object y el catalogo sigue andando contaminado.
+			 */
+			if (!Object.prototype.hasOwnProperty.call(pedido, id)) {
+				// El producto ya no esta en el catalogo: se lo despublico entre una visita y la otra.
+				saneado = true;
+				continue;
+			}
+
+			var c = Number(datos.cantidades[id]);
+			if (!isFinite(c) || c <= 0) {
+				saneado = true;
+				continue;
+			}
+
+			// Recortado al tope de hoy, que pudo haber bajado.
+			var recortada = Math.min(Math.floor(c), TOPE);
+			if (recortada !== c) saneado = true;
+			pedido[id].cantidad = recortada;
+
+			// 'typeof === function' y no truthy, por el mismo motivo que el guard de arriba.
+			if (typeof repintarTarjeta[id] === 'function') repintarTarjeta[id]();
+		}
+
+		/*
+		 * Lo saneado se escribe de vuelta.
+		 *
+		 * Sin esto, el recorte y el descarte pasan solo en memoria: la pantalla muestra 20 pero el
+		 * telefono sigue guardando 999, y el producto despublicado queda ahi para siempre. El dato
+		 * sucio se arrastra visita tras visita hasta que el cliente toque un boton, que es lo unico
+		 * que hoy dispara 'guardar()'.
+		 */
+		if (saneado) guardar();
+	}
 
 	// El espacio no separable que Intl mete despues del signo. Escrito por codigo y no como
 	// caracter literal: en el editor se ve igual que un espacio comun, y si alguien lo reemplaza
@@ -943,6 +1321,14 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 		return '$' + NBSP + pesos.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 	}
 
+	/*
+	 * Los elegidos, en el orden en que aparecen en el catalogo.
+	 *
+	 * El orden importa y no es el de insercion: 'for..in' recorre las claves como se agregaron al
+	 * objeto, o sea el orden del DOM, porque los ids son UUID y no enteros. Asi el detalle del
+	 * pedido lista los productos en el mismo orden en que el cliente los vio, y no en el orden en
+	 * que fue tocando "Agregar" — que al releer el mensaje no significa nada.
+	 */
 	function items() {
 		var lista = [];
 		for (var id in pedido) {
@@ -965,16 +1351,69 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 		return n;
 	}
 
+	/*
+	 * Los datos de entrega que escribio el cliente.
+	 *
+	 * Devuelve null si falta alguno: el mensaje se manda igual, sin el bloque de entrega. Frenar el
+	 * envio por un campo vacio convertiria un catalogo en un formulario, y el que solo quiere
+	 * preguntar precios se quedaria sin poder escribir.
+	 */
+	function datosDeEntrega() {
+		if (!elNombre || !elCelular || !elDia || !elHora) return null;
+
+		var nombre = (elNombre.value || '').replace(/^\s+|\s+$/g, '');
+		var celular = (elCelular.value || '').replace(/^\s+|\s+$/g, '');
+		var dia = elDia.value || '';
+		var hora = elHora.value || '';
+		if (!nombre || !celular || !dia || !hora) return null;
+
+		// 'YYYY-MM-DD' + 'HH:MM' construidos por componentes y NO con new Date(dia + 'T' + hora):
+		// ese constructor interpreta la cadena sin zona como UTC en algunos navegadores y como
+		// local en otros, y el pedido se correria tres horas segun el celular del cliente.
+		var p = dia.split('-');
+		var h = hora.split(':');
+		var fecha = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), parseInt(h[0], 10), parseInt(h[1], 10));
+		if (isNaN(fecha.getTime())) return null;
+
+		return { nombre: nombre, celular: celular, fecha: fecha };
+	}
+
+	var DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'mi\u00e9rcoles', 'jueves', 'viernes', 's\u00e1bado'];
+
+	function dosDigitos(n) {
+		return n < 10 ? '0' + n : String(n);
+	}
+
+	/* Espejo exacto de formatFechaEntrega() en shared/utils/mensaje-pedido.util.ts. */
+	function formatearFecha(f) {
+		return DIAS_SEMANA[f.getDay()] + ' ' + dosDigitos(f.getDate()) + '/' + dosDigitos(f.getMonth() + 1) + '/' +
+			f.getFullYear() + ' a las ' + dosDigitos(f.getHours()) + ':' + dosDigitos(f.getMinutes());
+	}
+
+	/*
+	 * **Espejo exacto de armarMensajeDePedido() en shared/utils/mensaje-pedido.util.ts.**
+	 *
+	 * Los dos tienen que producir el MISMO texto, byte por byte, incluido el NBSP que Intl mete
+	 * despues del signo peso. Es el bug clasico de este modulo: se cambia uno y el otro queda
+	 * atras, y la diferencia no se ve leyendo porque son caracteres invisibles.
+	 *
+	 * Lo que lo sostiene es carrito.spec.ts, que monta este HTML en jsdom y compara el href
+	 * generado aca contra el que arma la funcion de shared.
+	 */
 	function mensaje() {
 		var lista = items();
 		var lineas = [];
 		for (var i = 0; i < lista.length; i++) {
 			lineas.push('\u2022 ' + lista[i].cantidad + '\u00d7 ' + lista[i].nombre + ' \u2014 ' + formatear(lista[i].precio * lista[i].cantidad));
 		}
+		var datos = datosDeEntrega();
+		var entrega = datos
+			? '\n\nPara el ' + formatearFecha(datos.fecha) + '\nA nombre de ' + datos.nombre + ' \u2014 ' + datos.celular
+			: '';
 		var cierre = estaVencido()
 			? 'Total estimado: ' + formatear(total()) + '\n\nOjo: son los precios del cat\u00e1logo del ' + generadoEl + ' y pueden haber cambiado.'
 			: 'Total: ' + formatear(total()) + '\n\n(Precios del cat\u00e1logo del ' + generadoEl + '. Se confirman al responder.)';
-		return '\u00a1Hola! Quer\u00eda hacer este pedido:\n\n' + lineas.join('\n') + '\n\n' + cierre;
+		return '\u00a1Hola! Quer\u00eda hacer este pedido:\n\n' + lineas.join('\n') + entrega + '\n\n' + cierre;
 	}
 
 	/*
@@ -990,29 +1429,139 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 	 */
 	function pintarDetalle() {
 		var lista = items();
+
+		/*
+		 * El detalle se redibuja entero en cada cambio, y eso le roba el foco a quien esta usando
+		 * los +/- de un renglon: el boton que tenia el foco deja de existir.
+		 *
+		 * Por eso se anota cual estaba enfocado antes de borrar, y se lo devuelve despues sobre el
+		 * boton equivalente del renglon nuevo. Sin esto, restar de a uno con el teclado es
+		 * imposible: cada click manda el foco al body y hay que volver a tabular hasta el renglon.
+		 */
+		var activo = document.activeElement;
+		var idEnfocado = null;
+		var claseEnfocada = null;
+		if (activo && elDetalle.contains(activo)) {
+			var filaActiva = activo.parentNode;
+			if (filaActiva && filaActiva.getAttribute) {
+				idEnfocado = filaActiva.getAttribute('data-id');
+				claseEnfocada = activo.className;
+			}
+		}
+
 		elDetalle.textContent = '';
 
 		for (var i = 0; i < lista.length; i++) {
-			var fila = document.createElement('div');
-			fila.className = 'pedido-linea';
+			(function (linea) {
+				var fila = document.createElement('div');
+				fila.className = 'pedido-linea';
 
-			var nombre = document.createElement('span');
-			nombre.className = 'nombre';
-			nombre.textContent = lista[i].cantidad + '× ' + lista[i].nombre;
+				var nombre = document.createElement('span');
+				nombre.className = 'nombre';
+				nombre.textContent = linea.nombre;
 
-			var sub = document.createElement('span');
-			sub.className = 'sub';
-			sub.textContent = formatear(lista[i].precio * lista[i].cantidad);
+				/*
+				 * Los +/- de este renglon. La caja lleva el data-id para que el rescate del foco de
+				 * arriba pueda encontrar el renglon equivalente despues de redibujar.
+				 */
+				var caja = document.createElement('span');
+				caja.className = 'cantidad';
+				caja.setAttribute('data-id', linea.id);
 
-			fila.appendChild(nombre);
-			fila.appendChild(sub);
-			elDetalle.appendChild(fila);
+				var menos = document.createElement('button');
+				menos.type = 'button';
+				menos.className = 'menos';
+				menos.textContent = '\u2212';
+				// Con una unidad, el "-" no quita una unidad: saca el producto del pedido. Es la
+				// accion con consecuencia y tiene que anunciarse como tal.
+				menos.setAttribute(
+					'aria-label',
+					linea.cantidad === 1 ? 'Sacar ' + linea.nombre + ' del pedido' : 'Quitar una unidad de ' + linea.nombre,
+				);
+
+				var cuenta = document.createElement('span');
+				cuenta.className = 'cuenta';
+				cuenta.textContent = String(linea.cantidad);
+
+				var mas = document.createElement('button');
+				mas.type = 'button';
+				mas.className = 'mas';
+				mas.textContent = '+';
+				mas.disabled = linea.cantidad >= TOPE;
+				mas.setAttribute(
+					'aria-label',
+					linea.cantidad >= TOPE ? 'Maximo ' + TOPE + ' de ' + linea.nombre : 'Agregar ' + linea.nombre + ', llevas ' + linea.cantidad,
+				);
+
+				menos.addEventListener('click', function () {
+					cambiar(linea.id, -1);
+				});
+				mas.addEventListener('click', function () {
+					cambiar(linea.id, 1);
+				});
+
+				caja.appendChild(menos);
+				caja.appendChild(cuenta);
+				caja.appendChild(mas);
+
+				var sub = document.createElement('span');
+				sub.className = 'sub';
+				sub.textContent = formatear(linea.precio * linea.cantidad);
+
+				fila.appendChild(nombre);
+				fila.appendChild(caja);
+				fila.appendChild(sub);
+				fila.setAttribute('data-id', linea.id);
+				elDetalle.appendChild(fila);
+			})(lista[i]);
+		}
+
+		/*
+		 * La devolucion del foco, buscando por data-id y clase y no por posicion.
+		 *
+		 * Si el renglon que se estaba tocando desaparecio —llego a cero— el foco tiene que ir a
+		 * algo que siga existiendo Y visible. El orden de rescate no es arbitrario:
+		 *
+		 *   1. El mismo boton del mismo renglon, si sigue ahi.
+		 *   2. "Vaciar", que esta al lado, si la barra sigue a la vista.
+		 *   3. El boton "Agregar" de la tarjeta de ESE producto: cuando el pedido queda en cero la
+		 *      barra entera se esconde, y enfocar algo dentro de un elemento oculto no funciona —
+		 *      el navegador manda el foco al body y el siguiente Tab reinicia el recorrido desde
+		 *      arriba. Con 39 productos, eso es volver al principio del catalogo.
+		 *
+		 * La tarjeta del producto que se acaba de sacar es ademas el lugar util: es donde el
+		 * cliente volveria si se arrepintio.
+		 */
+		if (idEnfocado !== null) {
+			var filaNueva = elDetalle.querySelector('[data-id="' + idEnfocado + '"] .' + claseEnfocada);
+			if (filaNueva && !filaNueva.disabled) filaNueva.focus();
+			else if (elVaciar && !barra.hidden) elVaciar.focus();
+			else {
+				var enTarjeta = document.querySelector('.agregar[data-id="' + idEnfocado + '"]');
+				if (enTarjeta) enTarjeta.focus();
+			}
 		}
 	}
 
 	function sincronizar() {
 		var n = unidades();
 		barra.hidden = n === 0;
+
+		// El acceso al pedido desde el encabezado fijo, que acompana a la barra de abajo.
+		if (elVerArriba) {
+			elVerArriba.hidden = n === 0;
+			if (elCuentaArriba) elCuentaArriba.textContent = String(n);
+			elVerArriba.setAttribute('aria-label', n === 1 ? 'Mi pedido, 1 producto' : 'Mi pedido, ' + n + ' productos');
+			/*
+			 * El aria-expanded se deriva del estado real del detalle, en vez de setearse a mano al
+			 * abrir. Puesto a mano quedaba mintiendo: nada lo devolvia a 'false' al cerrar el
+			 * detalle desde el boton de abajo ni al vaciar el pedido, y un lector de pantalla
+			 * anunciaba "expandido" sobre algo que ya no lo estaba.
+			 *
+			 * Los otros tres atributos de este bloque ya se derivaban asi; este era el que faltaba.
+			 */
+			elVerArriba.setAttribute('aria-expanded', String(!elDetalle.hidden));
+		}
 
 		if (n > 0) {
 			var etiqueta = estaVencido() ? 'Total estimado' : 'Total';
@@ -1029,9 +1578,45 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 			elEnviar.setAttribute('aria-label', 'Seguir en WhatsApp con ' + resumen);
 			pintarDetalle();
 		} else {
-			// Con el pedido vacio se cierra el detalle: quedaria abierto y vacio al volver.
+			/*
+			 * El foco, antes de borrar el detalle.
+			 *
+			 * Este es el caso del cliente que saca el ULTIMO producto: la barra entera se esconde y
+			 * los renglones se borran, asi que el elemento que tenia el foco desaparece dos veces.
+			 * Sin rescatarlo aca, el navegador lo manda al body y el siguiente Tab reinicia el
+			 * recorrido desde arriba de todo — con 39 productos, volver al principio del catalogo.
+			 *
+			 * Va a la tarjeta del producto que se acaba de sacar, que es donde el cliente volveria
+			 * si se arrepintio. No se puede resolver en pintarDetalle() porque esta rama ni siquiera
+			 * lo llama.
+			 */
+			var enfocado = document.activeElement;
+			if (enfocado && elDetalle.contains(enfocado)) {
+				var filaDelFoco = enfocado.parentNode;
+				var idDelFoco = filaDelFoco && filaDelFoco.getAttribute ? filaDelFoco.getAttribute('data-id') : null;
+				var tarjeta = idDelFoco ? document.querySelector('.agregar[data-id="' + idDelFoco + '"]') : null;
+				if (tarjeta) tarjeta.focus();
+			}
+
+			/*
+			 * Con el pedido vacio se cierra el detalle: quedaria abierto y vacio al volver.
+			 *
+			 * Va escrito a mano y no con mostrarDetalle() por orden de declaracion: esa funcion se
+			 * define despues, y el bloque de arriba de esta misma funcion ya leyo elDetalle.hidden
+			 * para derivar el aria-expanded del boton de arriba. Cerrarlo aca y setear los dos
+			 * atributos mantiene los tres coherentes.
+			 */
 			elDetalle.hidden = true;
 			elVer.setAttribute('aria-expanded', 'false');
+			if (elVerArriba) elVerArriba.setAttribute('aria-expanded', 'false');
+			/*
+			 * Y se cierra la pregunta, si estaba abierta.
+			 *
+			 * Es alcanzable: en el respaldo sin <dialog> (Safari < 15.4) el fondo sigue clickeable,
+			 * asi que se puede vaciar el pedido con la pregunta en pantalla. Quedaria un "¿Desea
+			 * agregar otro producto?" ofreciendo enviar un pedido que ya no existe.
+			 */
+			if (typeof cerrarConfirmacion === 'function') cerrarConfirmacion();
 			// El destino y el detalle se limpian con el pedido: si quedaran con lo anterior, un
 			// cliente que agrego, se arrepintio y vacio podria mandar el pedido que acababa de
 			// cancelar — el enlace sigue en el DOM aunque la barra este escondida.
@@ -1048,59 +1633,127 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 		}
 	}
 
-	// Cada tarjeta sincroniza sus propios botones desde el objeto, nunca al reves.
-	var selectores = document.querySelectorAll('.cantidad');
-	for (var i = 0; i < selectores.length; i++) {
-		(function (caja) {
-			var id = caja.getAttribute('data-id');
-			var nombre = caja.getAttribute('data-nombre') || '';
-			var precio = Number(caja.getAttribute('data-precio'));
-			var cuenta = caja.querySelector('.cuenta');
-			var mas = caja.querySelector('.mas');
-			var menos = caja.querySelector('.menos');
+	/*
+	 * Cambiar la cantidad de un producto. **Es el unico camino** para tocar el pedido.
+	 *
+	 * Antes cada tarjeta manipulaba su propia cantidad adentro de su closure. Ahora el mismo
+	 * producto se toca desde dos lugares —el boton "Agregar" de la tarjeta y los +/- del renglon
+	 * del detalle— asi que el cambio vive en un solo lado y los dos lo llaman. Con dos copias, la
+	 * que se olvide de guardar en localStorage deja el pedido guardado desincronizado del que se
+	 * ve en pantalla.
+	 */
+	function cambiar(id, delta) {
+		var item = pedido[id];
+		if (!item) return;
 
-			pedido[id] = { nombre: nombre, precio: precio, cantidad: 0 };
+		var nueva = item.cantidad + delta;
+		if (nueva < 0) nueva = 0;
+		if (nueva > TOPE) nueva = TOPE;
+		if (nueva === item.cantidad) return;
+
+		item.cantidad = nueva;
+		if (typeof repintarTarjeta[id] === 'function') repintarTarjeta[id]();
+		guardar();
+		sincronizar();
+	}
+
+	/*
+	 * Cada tarjeta sincroniza su boton desde el objeto, nunca al reves.
+	 *
+	 * Se selecciona por '[data-id]' y no solo por '.agregar': la clase es de estilo y la comparte
+	 * el boton "No, enviar el pedido" del dialogo, que se dibuja igual a proposito. Sin el
+	 * atributo, ese boton entraba al registro como si fuera un producto —con nombre vacio y precio
+	 * NaN— y aparecia en el mensaje de WhatsApp como un renglon fantasma "1x  - $ 0,00".
+	 */
+	var botones = document.querySelectorAll('.agregar[data-id]');
+	for (var i = 0; i < botones.length; i++) {
+		(function (boton) {
+			var id = boton.getAttribute('data-id');
+			var nombre = boton.getAttribute('data-nombre') || '';
+			var precio = Number(boton.getAttribute('data-precio'));
+
+			pedido[id] = { id: id, nombre: nombre, precio: precio, cantidad: 0 };
 
 			function pintar() {
 				var c = pedido[id].cantidad;
-				cuenta.textContent = String(c);
 
 				/*
-				 * El estado va en el aria-label de los botones y no en el <span> del numero: un
-				 * aria-label sobre un elemento sin rol semantico lo ignoran varios lectores, y
-				 * cambiar su texto no dispara ningun anuncio. En cambio el label del boton se
-				 * relee cada vez que se lo activa, que es exactamente cuando hace falta.
+				 * El texto del boton cambia, no solo su color: quien no distingue un rosa de otro
+				 * igual lee "2" donde antes decia "Agregar". El estado nunca viaja solo en color.
 				 */
-				mas.setAttribute('aria-label', c >= TOPE ? 'Maximo ' + TOPE + ' de ' + nombre : 'Agregar ' + nombre + ', llevas ' + c);
-				// Con una unidad, el "-" no quita una unidad: saca el producto del pedido. Es la
-				// accion con consecuencia y tiene que anunciarse como tal.
-				menos.setAttribute('aria-label', c === 1 ? 'Sacar ' + nombre + ' del pedido' : 'Quitar una unidad de ' + nombre);
+				boton.textContent = c === 0 ? 'Agregar' : '\u2713 ' + c;
+				if (c === 0) boton.className = 'accion agregar';
+				else boton.className = 'accion agregar puesto';
 
-				menos.disabled = c === 0;
-				mas.disabled = c >= TOPE;
-				sincronizar();
+				/*
+				 * El estado va en el aria-label del boton y no en un <span> aparte: un aria-label
+				 * sobre un elemento sin rol semantico lo ignoran varios lectores, y cambiar su
+				 * texto no dispara ningun anuncio. En cambio el label del boton se relee cada vez
+				 * que se lo activa, que es exactamente cuando hace falta.
+				 */
+				boton.setAttribute(
+					'aria-label',
+					c >= TOPE ? 'Maximo ' + TOPE + ' de ' + nombre : c === 0 ? 'Agregar ' + nombre + ' al pedido' : 'Agregar ' + nombre + ', llevas ' + c,
+				);
+				boton.disabled = c >= TOPE;
 			}
 
-			mas.addEventListener('click', function () {
-				if (pedido[id].cantidad < TOPE) pedido[id].cantidad++;
-				pintar();
+			repintarTarjeta[id] = pintar;
+
+			boton.addEventListener('click', function () {
+				cambiar(id, 1);
 			});
-			menos.addEventListener('click', function () {
-				if (pedido[id].cantidad > 0) pedido[id].cantidad--;
-				// El "-" queda deshabilitado al llegar a cero, y el foco encima de un boton
-				// deshabilitado se pierde: el navegador lo manda al body y el siguiente Tab reinicia
-				// el recorrido desde el principio. Con 39 productos eso es volver al inicio.
-				if (pedido[id].cantidad === 0 && document.activeElement === menos) mas.focus();
-				pintar();
-			});
-		})(selectores[i]);
+		})(botones[i]);
+	}
+
+	/*
+	 * El pedido guardado se rehidrata **despues** de registrar las tarjetas, porque necesita que
+	 * 'pedido' ya tenga los productos de este documento para poder descartar los que no estan.
+	 *
+	 * Y va envuelto en try/catch como ultima red: un pedido guardado es un dato que el catalogo no
+	 * controla, y ninguna forma de ese dato puede dejar sin catalogo al cliente. Si rehidratar
+	 * falla por lo que sea, se pierde el pedido guardado —molesto— pero el catalogo arranca igual,
+	 * que es lo unico que no se puede negociar.
+	 */
+	try {
+		rehidratar();
+	} catch (e) {
+		try {
+			window.localStorage.removeItem(LLAVE);
+		} catch (e2) {
+			/* nada que hacer */
+		}
+	}
+
+	/*
+	 * Abrir o cerrar el detalle. **Es el unico camino** para cambiar ese estado.
+	 *
+	 * Existe porque hay tres botones que lo tocan —"Ver" abajo, "Mi pedido" arriba, y Escape— mas
+	 * las dos ramas de sincronizar(). Con el cambio escrito en cada lugar, los dos aria-expanded
+	 * se desincronizaban: el de arriba se ponia en 'true' al abrir y nadie lo devolvia a 'false'.
+	 */
+	function mostrarDetalle(abierto) {
+		elDetalle.hidden = !abierto;
+		elVer.setAttribute('aria-expanded', String(abierto));
+		if (elVerArriba) elVerArriba.setAttribute('aria-expanded', String(abierto));
 	}
 
 	elVer.addEventListener('click', function () {
-		var abierto = elDetalle.hidden;
-		elDetalle.hidden = !abierto;
-		elVer.setAttribute('aria-expanded', String(abierto));
+		mostrarDetalle(elDetalle.hidden);
 	});
+
+	/*
+	 * "Mi pedido" del encabezado abre el detalle de la barra de abajo y le manda el foco.
+	 *
+	 * Abre siempre, no alterna: quien lo toca quiere ver su pedido. Un toggle desde arriba,
+	 * estando el detalle abierto abajo, lo cerraria sin que nada visible cambie cerca del dedo.
+	 */
+	if (elVerArriba) {
+		elVerArriba.addEventListener('click', function () {
+			mostrarDetalle(true);
+			elVer.focus();
+		});
+	}
 
 	// Esc cierra el detalle y devuelve el foco: sin esto, quien navega con teclado queda
 	// tabulando dentro de un panel sin saber como salir.
@@ -1109,8 +1762,7 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 		// significado nativo de limpiar el campo, y robarle el foco al cliente que quiso borrar su
 		// busqueda lo deja en otro lado sin haber pedido nada.
 		if (e.key === 'Escape' && !elDetalle.hidden && barra.contains(document.activeElement)) {
-			elDetalle.hidden = true;
-			elVer.setAttribute('aria-expanded', 'false');
+			mostrarDetalle(false);
 			elVer.focus();
 		}
 	});
@@ -1120,9 +1772,134 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 	 * que falta hacer. Es la diferencia entre informar y prometer: si el celular no tiene WhatsApp
 	 * instalado, el mensaje sigue siendo cierto.
 	 */
-	elEnviar.addEventListener('click', function () {
-		elNota.textContent = 'Te abrimos WhatsApp con el pedido escrito. Falta que le des enviar ah\u00ed.';
+	/*
+	 * Vaciar el pedido entero.
+	 *
+	 * Se ponen las cantidades en cero y se repintan TODAS las tarjetas: el estado vive en el objeto
+	 * pedido, pero cada tarjeta tiene su propio contador en el DOM y no se entera sola.
+	 *
+	 * Los datos de contacto NO se borran. Quien vacia el pedido casi siempre quiere volver a armarlo
+	 * distinto, no dejar de ser quien es — y retipear el nombre y el telefono en un celular es
+	 * justamente lo que esta pantalla trata de evitar.
+	 */
+	if (elVaciar) {
+		elVaciar.addEventListener('click', function () {
+			for (var k in pedido) {
+				if (Object.prototype.hasOwnProperty.call(pedido, k)) pedido[k].cantidad = 0;
+			}
+			for (var k2 in repintarTarjeta) {
+				if (Object.prototype.hasOwnProperty.call(repintarTarjeta, k2)) repintarTarjeta[k2]();
+			}
+			guardar();
+			/*
+			 * El repintado de las tarjetas NO refresca la barra: 'pintar()' solo dibuja su propio
+			 * boton. Quien mueve la barra, el total y el enlace es 'sincronizar()', y hay que
+			 * llamarlo explicitamente — si no, vaciar deja las tarjetas en cero pero la barra
+			 * abajo sigue mostrando el total anterior, con su enlace de WhatsApp todavia cargado.
+			 */
+			sincronizar();
+			// El foco se pierde con la barra al esconderse: se lo devuelve al buscador si existe,
+			// y si no al principio del documento, en vez de dejarlo en el body.
+			if (buscador) buscador.focus();
+		});
+	}
+
+	/*
+	 * ─────────────────────────────────────────────────────────────────────────────────────────
+	 * La pregunta antes de salir a WhatsApp.
+	 *
+	 * "Seguir en WhatsApp" ya no navega directo: abre el dialogo. Ahi el cliente elige entre
+	 * volver al catalogo con el pedido cargado, o mandarlo.
+	 *
+	 * El <a> conserva su href intacto todo el tiempo. Lo que se hace es cancelar la navegacion con
+	 * preventDefault y dispararla despues desde el boton "No, enviar". Vaciar el href y volver a
+	 * ponerlo dejaria una ventana en la que el enlace no lleva a ningun lado, y ademas romperia el
+	 * "abrir en pestana nueva" del menu contextual, que no pasa por ningun evento de click.
+	 * ─────────────────────────────────────────────────────────────────────────────────────────
+	 */
+	var elConfirmar = document.getElementById('pedido-confirmar');
+	var elConfirmarEnviar = document.getElementById('pedido-confirmar-enviar');
+	var elConfirmarSeguir = document.getElementById('pedido-confirmar-seguir');
+	// Safari < 15.4 no tiene <dialog>. Ahi se muestra con [hidden] y una clase que lo centra.
+	var hayDialogo = elConfirmar && typeof elConfirmar.showModal === 'function';
+
+	function abrirConfirmacion() {
+		if (!elConfirmar) return;
+		if (hayDialogo) {
+			elConfirmar.showModal();
+		} else {
+			elConfirmar.hidden = false;
+			elConfirmar.className = 'confirmar sin-soporte';
+			elConfirmar.setAttribute('open', 'open');
+		}
+		// El foco al boton principal. Con <dialog> nativo el foco entra solo, pero cae en el
+		// primer elemento enfocable, que puede ser el fondo del propio dialogo segun el navegador.
+		if (elConfirmarEnviar) elConfirmarEnviar.focus();
+	}
+
+	function cerrarConfirmacion() {
+		if (!elConfirmar) return;
+		if (hayDialogo) {
+			elConfirmar.close();
+		} else {
+			elConfirmar.hidden = true;
+			elConfirmar.className = 'confirmar';
+			elConfirmar.removeAttribute('open');
+		}
+	}
+
+	elEnviar.addEventListener('click', function (e) {
+		// Sin href no hay pedido que mandar: la barra no deberia estar visible, pero si el click
+		// llega igual, no se abre un dialogo que confirma la nada.
+		if (!elEnviar.getAttribute('href')) return;
+		if (!elConfirmar) return;
+		e.preventDefault();
+		abrirConfirmacion();
 	});
+
+	if (elConfirmarSeguir) {
+		elConfirmarSeguir.addEventListener('click', function () {
+			cerrarConfirmacion();
+			/*
+			 * Se cierra tambien el detalle del pedido: quien dijo "sigo agregando" quiere ver el
+			 * catalogo, y el detalle abierto le tapa media pantalla justo cuando va a buscar.
+			 * El pedido queda cargado — solo se esconde la lista.
+			 */
+			mostrarDetalle(false);
+			if (buscador) buscador.focus();
+			else elVer.focus();
+		});
+	}
+
+	if (elConfirmarEnviar) {
+		elConfirmarEnviar.addEventListener('click', function () {
+			cerrarConfirmacion();
+
+			var destino = elEnviar.getAttribute('href');
+			/*
+			 * Sin destino no se avisa nada, y el orden importa: la nota se escribia ANTES de este
+			 * chequeo, asi que en el caso de vaciar el pedido con el dialogo abierto —posible,
+			 * porque en el respaldo sin <dialog> el fondo sigue clickeable— quedaba en pantalla un
+			 * "te abrimos WhatsApp" sin haberse abierto nada.
+			 *
+			 * Es justo lo que el aviso se propone no hacer: informa lo que falta hacer, no promete
+			 * lo que no puede saber. Prometerlo cuando encima es falso lo vuelve peor que no estar.
+			 */
+			if (!destino) return;
+
+			elNota.textContent = 'Te abrimos WhatsApp con el pedido escrito. Falta que le des enviar ah\u00ed.';
+
+			/*
+			 * La navegacion se dispara a mano porque el click original se cancelo.
+			 *
+			 * 'window.open' con el mismo target y rel que el enlace. Si el navegador lo bloquea por
+			 * bloqueador de popups —puede pasar, aunque esto nace de un click del usuario— se cae a
+			 * navegar en la misma pestana, que siempre funciona.
+			 */
+			var abierta = window.open(destino, '_blank', 'noopener');
+			if (!abierta) window.location.href = destino;
+		});
+	}
 
 	/*
 	 * Con el teclado abierto la barra estorba, y de dos formas opuestas segun la plataforma: en
@@ -1131,6 +1908,71 @@ footer { text-align: center; margin-top: 40px; color: var(--suave); font-size: .
 	if (buscador) {
 		buscador.addEventListener('focus', function () { document.body.classList.add('escribiendo'); });
 		buscador.addEventListener('blur', function () { document.body.classList.remove('escribiendo'); });
+	}
+
+	/*
+	 * El primer dia que se puede elegir, segun la anticipacion configurada.
+	 *
+	 * Se pone como atributo min del input nativo: el selector del celular directamente no deja
+	 * elegir antes, sin JavaScript de por medio. Los dias cerrados NO se pueden deshabilitar en un
+	 * input date nativo, asi que esos se avisan por texto.
+	 */
+	function minimoElegible() {
+		var d = new Date();
+		d.setHours(d.getHours() + ANTICIPACION);
+		return d.getFullYear() + '-' + dosDigitos(d.getMonth() + 1) + '-' + dosDigitos(d.getDate());
+	}
+
+	if (elDia) {
+		elDia.setAttribute('min', minimoElegible());
+		if (ATIENDE_DESDE) elHora.setAttribute('min', ATIENDE_DESDE);
+		if (ATIENDE_HASTA) elHora.setAttribute('max', ATIENDE_HASTA);
+	}
+
+	/*
+	 * El aviso de la ventana de entrega.
+	 *
+	 * **No bloquea el envio.** Este catalogo termina en un mensaje de WhatsApp que lee una persona,
+	 * no en un endpoint que valida: si alguien pide para un lunes cerrado, la panaderia le
+	 * responde. Frenarlo aca seria imponer una regla mas dura que la del mostrador.
+	 *
+	 * Se avisa igual, porque el cliente prefiere enterarse antes de mandar que despues.
+	 */
+	function revisarEntrega() {
+		if (!elAviso || !elDia) return;
+		elAviso.textContent = '';
+
+		var datos = datosDeEntrega();
+		if (!datos) return;
+
+		var avisos = [];
+		for (var i = 0; i < DIAS_CERRADOS.length; i++) {
+			if (DIAS_CERRADOS[i] === datos.fecha.getDay()) {
+				avisos.push('Los ' + DIAS_SEMANA[datos.fecha.getDay()] + ' no entregamos pedidos.');
+				break;
+			}
+		}
+
+		var ahora = new Date();
+		if (datos.fecha.getTime() < ahora.getTime() + ANTICIPACION * 3600000) {
+			avisos.push('Tomamos los pedidos con ' + ANTICIPACION + ' horas de anticipaci\u00f3n.');
+		}
+
+		if (avisos.length > 0) {
+			elAviso.textContent = avisos.join(' ') + ' Mand\u00e1 igual y lo vemos.';
+		}
+	}
+
+	var campos = [elNombre, elCelular, elDia, elHora];
+	for (var c = 0; c < campos.length; c++) {
+		if (!campos[c]) continue;
+		// 'input' y no 'change': el mensaje se arma en cada tecla, asi que el href del boton
+		// siempre refleja lo que esta escrito. Con 'change' el cliente podria tocar enviar antes de
+		// que el campo perdiera el foco y mandar el pedido sin su propio nombre.
+		campos[c].addEventListener('input', function () {
+			sincronizar();
+			revisarEntrega();
+		});
 	}
 
 	sincronizar();
