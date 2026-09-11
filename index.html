@@ -85,8 +85,41 @@ h1, h2, h3 { font-family: var(--titulo); font-weight: 600; line-height: 1.05; ma
 .cinta span { display: inline-flex; align-items: center; gap: 10px; }
 .cinta span + span::before { content: '·'; opacity: 0.5; }
 
-.encabezado { padding: 22px 0; border-bottom: 1px solid var(--borde); }
+/*
+ * El encabezado queda fijo arriba y el resto de la página scrollea por debajo.
+ *
+ * La cinta de arriba **no** se fija: se va con el scroll. Fijar las dos comía demasiado alto de
+ * pantalla en el celular, que es el caso principal. Por eso el 'top: 0' es correcto aunque haya
+ * una cinta encima: para cuando el encabezado toca el borde de la pantalla, la cinta ya salió.
+ *
+ * 'sticky' y no 'fixed' a propósito: sticky reserva su lugar en el flujo, así que lo que sigue no
+ * se le mete debajo y no hace falta compensar con padding en el body — un padding fijo se
+ * desalinearía apenas el menú envuelva a dos líneas en una pantalla angosta.
+ *
+ * El fondo explícito es parte del arreglo, no decoración: sin él el encabezado es transparente y
+ * al scrollear se le ven las tarjetas pasando por atrás.
+ *
+ * El 'z-index' lo deja por encima del contenido, pero **por debajo** de la barra del pedido (40) y
+ * del diálogo de confirmación (50), que tienen que poder taparlo.
+ */
+.encabezado {
+	padding: 22px 0;
+	border-bottom: 1px solid var(--borde);
+	position: sticky;
+	top: 0;
+	z-index: 30;
+	background: var(--crema);
+}
 .encabezado .envoltorio { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+/*
+ * El respiro que dejan los enlaces internos del menú ('#catalogo', '#encargos', '#nosotras').
+ *
+ * Sin esto el navegador lleva la sección exactamente al borde de arriba, que es justo donde está
+ * el encabezado fijo: el cliente toca "Catálogo" y el título le queda tapado. El valor cubre el
+ * alto del encabezado —38px de marca más la bajada y 22px de padding arriba y abajo— con holgura
+ * para cuando el menú envuelve.
+ */
+:target { scroll-margin-top: 120px; }
 .marca h1 { font-size: 38px; font-style: italic; letter-spacing: -0.01em; }
 .marca p {
 	margin: 2px 0 0;
@@ -111,20 +144,42 @@ h1, h2, h3 { font-family: var(--titulo); font-weight: 600; line-height: 1.05; ma
 
 /* ─────────────────────────────── portada */
 
-.portada { display: grid; grid-template-columns: 1fr; }
 /*
- * El padding lateral se pone acá y no se hereda del '.envoltorio'.
+ * La portada: una sola columna centrada, sin foto.
  *
- * La mitad de texto de la portada es una celda de un grid a dos columnas, así que el
- * 'margin: 0 auto' del envoltorio no tiene contra qué centrar: la celda ya mide lo que mide, y el
- * texto terminaba pegado al borde izquierdo de la pantalla. Con el padding propio arranca alineado
- * con el resto de la página.
+ * El orden vertical es marca → bajada de la marca → volanta → título → texto → botones, y **la
+ * jerarquía de tamaños es el punto del diseño**: la marca es lo más grande de la página y el
+ * título editable va deliberadamente por debajo. Ver la nota de tamaños en '.portada-marca'.
  */
-.portada-texto { padding: 56px 24px 64px; max-width: none; }
-.portada-texto h2 { font-size: clamp(46px, 11vw, 92px); letter-spacing: -0.02em; }
-.portada-texto .bajada { font-size: 19px; max-width: 30em; margin: 26px 0 0; color: var(--vino-claro); }
+.portada { padding: 56px 0 64px; text-align: center; }
+.portada-texto { max-width: 46em; margin: 0 auto; }
 
-.portada-botones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+/*
+ * La marca y su bajada, arriba de todo y centradas.
+ *
+ * El tamaño de la marca y el del título de abajo están atados: la marca tiene que ganar en los
+ * dos extremos del 'clamp', no solo en pantalla ancha. Marca 40→76px contra título 30→50px: el
+ * mínimo de la marca supera al mínimo del título y el máximo al máximo, así que no hay ancho de
+ * pantalla donde el título editable le pase por arriba. Si alguien toca uno de los dos 'clamp',
+ * tiene que revisar el otro o se pierde justamente lo que se pidió acá.
+ */
+.portada-marca h2 { font-size: clamp(40px, 9vw, 76px); font-style: italic; letter-spacing: -0.01em; }
+.portada-marca .marca-bajada {
+	margin: 10px 0 0;
+	font-size: 13px;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+	color: var(--vino-claro);
+}
+
+/* El bloque del título editable, separado de la marca para que se lean como dos cosas distintas. */
+.portada-titulo { margin-top: 46px; }
+.portada-titulo .volanta { margin-bottom: 12px; }
+/* Más chico que la marca, a propósito. Ver la nota de '.portada-marca'. */
+.portada-titulo h3 { font-size: clamp(30px, 5.5vw, 50px); letter-spacing: -0.01em; }
+.portada-texto .bajada { font-size: 19px; max-width: 30em; margin: 22px auto 0; color: var(--vino-claro); }
+
+.portada-botones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; justify-content: center; }
 .boton {
 	display: inline-block;
 	text-decoration: none;
@@ -141,48 +196,16 @@ h1, h2, h3 { font-family: var(--titulo); font-weight: 600; line-height: 1.05; ma
 .boton-vacio { background: transparent; color: var(--vino); }
 .boton-vacio:hover { background: var(--vino); color: var(--crema); }
 
-/* El bloque de la foto. Sin foto queda el rosa de la marca, como en el diseño original. */
-.portada-foto {
-	background: var(--rosa);
-	position: relative;
-	min-height: 420px;
-	display: flex;
-	align-items: flex-end;
-	padding: 26px;
-}
-/*
- * Acá sí 'cover', a diferencia de las tarjetas: es un bloque a sangre que ocupa media pantalla, y
- * con 'contain' quedarían franjas rosas arriba y abajo de la foto. El recorte es del CSS y no del
- * archivo, así que la foto guardada sigue entera y cambiar esta decisión no pierde píxeles.
+/* ─────────────────────────────── secciones con título
+ *
+ * Lo usa el encabezado del catálogo. Sobrevivió a la sección "Lo más pedido", que se eliminó del
+ * diseño y era la otra que lo usaba, así que no es código muerto aunque el nombre suene genérico.
  */
-.portada-foto img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-/* La tarjeta blanca apoyada sobre la foto. 'position: relative' la deja por encima del 'img'. */
-.portada-pie { position: relative; background: var(--blanco); padding: 22px 26px; max-width: 420px; }
-.portada-pie h3 { font-size: 26px; }
-.portada-pie p { margin: 8px 0 0; font-size: 15px; color: var(--vino-claro); }
-
-/* La cinta de especialidades. */
-.se-encarga { background: var(--crema-hondo); padding: 20px 0; }
-.se-encarga .envoltorio { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
-.se-encarga .volanta { margin: 0; }
-.se-encarga li { list-style: none; }
-.se-encarga ul { display: flex; gap: 18px; flex-wrap: wrap; margin: 0; padding: 0; }
-.se-encarga li + li::before { content: '·'; opacity: 0.45; margin-right: 18px; }
-
-/* ─────────────────────────────── lo más pedido */
 
 .seccion { padding: 72px 0; }
 .seccion-titulo { display: grid; gap: 16px; align-items: end; margin-bottom: 40px; }
 .seccion-titulo h2 { font-size: clamp(36px, 6vw, 58px); }
 .seccion-titulo p { margin: 0; color: var(--vino-claro); max-width: 34em; }
-
-.destacados { display: grid; grid-template-columns: 1fr; gap: 30px; }
-.destacado figure { margin: 0; }
-.destacado .marco { background: var(--rosa-suave); aspect-ratio: 1; overflow: hidden; }
-/* Enteras, como en las tarjetas y por el mismo motivo. */
-.destacado .marco img { width: 100%; height: 100%; object-fit: contain; }
-.destacado h3 { font-size: 30px; margin-top: 18px; }
-.destacado p { margin: 8px 0 0; color: var(--vino-claro); font-size: 16px; }
 
 /* ─────────────────────────────── catálogo */
 
@@ -276,11 +299,43 @@ h1, h2, h3 { font-family: var(--titulo); font-weight: 600; line-height: 1.05; ma
 
 /* ─────────────────────────────── nosotras */
 
-.nosotras { display: grid; grid-template-columns: 1fr; }
-.nosotras-foto { background: var(--rosa); min-height: 340px; }
-.nosotras-foto img { width: 100%; height: 100%; object-fit: cover; }
-.nosotras-texto { padding: 60px 24px; }
-.nosotras-texto h2 { font-size: clamp(34px, 6vw, 56px); }
+/*
+ * "Nosotras": una sola columna centrada, sin foto.
+ *
+ * El ancho lo limita '.nosotras-texto' y no el '.envoltorio': el texto centrado necesita una
+ * medida de lectura más angosta que el ancho de la página, o los párrafos salen de punta a punta y
+ * el ojo pierde el renglón al volver.
+ *
+ * El título es más grande que el de las otras secciones —el dueño lo pidió destacado— pero **sigue
+ * por debajo de la marca de la portada** (40→76px), que es lo más grande de la página por decisión
+ * de diseño. Quien suba este 'clamp' tiene que mirar aquel primero.
+ */
+.nosotras { padding: 72px 0; text-align: center; border-top: 1px solid var(--borde); }
+.nosotras-texto { max-width: 40em; margin: 0 auto; padding: 0 24px; }
+/*
+ * La palabra "Nosotras" es lo que encabeza la sección, y va **más grande que el título editable
+ * que la sigue**. Es al revés que en el resto de la página, donde la volanta es una línea chica de
+ * 12px que solo etiqueta lo que viene abajo.
+ *
+ * Los dos escalan, y ahí está el detalle que importa: con el rótulo en un tamaño fijo y el título
+ * en 'clamp', el título lo pasaba en pantalla angosta —30px contra 22px— y la jerarquía se
+ * invertía justo en el celular, que es el caso principal. Con los dos en 'clamp' el rótulo gana en
+ * los dos extremos: 26→40 contra 21→32. Quien toque uno tiene que mirar el otro.
+ *
+ * Se queda en versalitas con su espaciado: es lo que lo sigue leyendo como un rótulo de sección y
+ * no como un segundo título compitiendo con el de abajo.
+ */
+.nosotras-texto .volanta {
+	font-size: clamp(26px, 4vw, 40px);
+	font-family: var(--titulo);
+	font-weight: 600;
+	color: var(--vino);
+	letter-spacing: 0.14em;
+	line-height: 1.05;
+	margin-bottom: 16px;
+}
+/* Más chico que la palabra "Nosotras" de arriba, en los dos extremos del clamp. */
+.nosotras-texto h2 { font-size: clamp(21px, 3.2vw, 32px); }
 .nosotras-texto p { color: var(--vino-claro); margin: 22px 0 0; }
 .nosotras-texto .instagram {
 	display: inline-block;
@@ -455,7 +510,6 @@ dialog.confirmar:not([open]) { display: none; }
  */
 
 @media (min-width: 700px) {
-	.destacados { grid-template-columns: repeat(3, 1fr); }
 	.grilla { grid-template-columns: repeat(2, 1fr); }
 	.pedido-datos { grid-template-columns: repeat(2, 1fr); }
 	.seccion-titulo { grid-template-columns: 1fr 1fr; gap: 40px; }
@@ -467,20 +521,8 @@ dialog.confirmar:not([open]) { display: none; }
 @media (min-width: 1000px) {
 	body { font-size: 18px; }
 	.grilla { grid-template-columns: repeat(3, 1fr); }
-	.portada { grid-template-columns: 1fr 1fr; align-items: stretch; }
-	/*
-	 * En pantalla ancha el texto de la portada se alinea con el resto de la página en vez de
-	 * pegarse al borde. El cálculo replica lo que hace el envoltorio: la mitad de lo que sobra
-	 * fuera del ancho máximo, más su padding. max(24px, …) evita que quede negativo entre 1000px
-	 * y el ancho máximo, donde no sobra nada que repartir.
-	 */
-	.portada-texto {
-		padding: 76px 40px 90px max(24px, calc((100vw - var(--ancho)) / 2 + 24px));
-	}
-	.portada-foto { min-height: 620px; }
-	.nosotras { grid-template-columns: 1fr 1fr; }
-	.nosotras-foto { min-height: 560px; }
-	.nosotras-texto { padding: 90px 60px; }
+	.portada { padding: 84px 0 96px; }
+	.nosotras { padding: 96px 0; }
 	.encargos .envoltorio { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
 	.pasos { margin-top: 0; }
 }
@@ -518,7 +560,7 @@ dialog.confirmar:not([open]) { display: none; }
 
 <div class="cinta">
 	<div class="envoltorio">
-		<span>Córdoba capital · retiro y envíos</span>
+		<span>Córdoba Capital - retiro y envíos</span>
 		<span>Encargos con 48 h de anticipación</span>
 	</div>
 </div>
@@ -540,83 +582,43 @@ dialog.confirmar:not([open]) { display: none; }
 </header>
 
 <section class="portada">
-	<div class="envoltorio portada-texto">
-		<p class="volanta">PASTELERÍA ARTESANAL · CÓRDOBA</p>
-		<h2>Tortas y alfajores hechos en casa, todos los días</h2>
-		<p class="bajada">Rogel, chocotorta, pavlova, tartas y cajas materas. Se hornea por pedido, en cantidad chica, con la receta de siempre.</p>
-		<div class="portada-botones">
-			<a class="boton boton-lleno" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20hacer%20una%20consulta." target="_blank" rel="noopener">Pedir por WhatsApp</a>
-			<a class="boton boton-vacio" href="#catalogo">Ver el catálogo</a>
-		</div>
-	</div>
-	<div class="portada-foto">
-		<img src="fotos/seccion-portada-e7fb0151-c429-4773-911a-78e61092a9d0.webp" alt="" width="900" height="1200">
-		<div class="portada-pie">
-			<h3>Pavlova de estación</h3>
-			<p>Merengue, dulce de leche, crema chantilly y frutas.</p>
+	<div class="envoltorio">
+		<div class="portada-texto">
+			<div class="portada-marca">
+				<h2>La Dulcería</h2>
+				<p class="marca-bajada">HECHO EN CASA</p>
+			</div>
+			<div class="portada-titulo">
+				<p class="volanta">PASTELERIA ARTESANAL - CORDOBA</p>
+				<h3>Tortas, tartas, budines, box y más, hechos en casa, todos los días</h3>
+				<p class="bajada">Rogel, chocotorta, pavlova, tartas y cajas materas. Se hornea por pedido, en cantidades chicas, con la receta de siempre.</p>
+			</div>
+			<div class="portada-botones">
+				<a class="boton boton-lleno" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20hacer%20una%20consulta." target="_blank" rel="noopener">Pedir por WhatsApp</a>
+				<a class="boton boton-vacio" href="#catalogo">Ver el catálogo</a>
+			</div>
 		</div>
 	</div>
 </section>
 
-<section class="se-encarga">
-		<div class="envoltorio">
-			<p class="volanta">Se encarga</p>
-			<ul>
-				<li>Cumpleaños</li>
-				<li>Mesas dulces</li>
-				<li>Cajas para regalo</li>
-				<li>Sin gluten</li>
-				<li>Pascua y fechas</li>
-			</ul>
-		</div>
-	</section>
-
-<section class="seccion" id="destacados">
-		<div class="envoltorio">
-			<div class="seccion-titulo">
-				<h2>Lo más pedido</h2>
-				<p>Lo que más se vende estos meses. El resto está en el catálogo.</p>
-			</div>
-			<div class="destacados">
-			<article class="destacado">
-				<figure>
-					<div class="marco"><img src="fotos/f7665f47-87c8-460f-8c2f-4f2a3728d4fe.webp" alt="CARROT CAKE" loading="lazy" width="380" height="380"></div>
-					<figcaption>
-						<h3>CARROT CAKE</h3>
-						<p>Bizcochuelo de zanahoria con frosting de queso crema (22cm)</p>
-					</figcaption>
-				</figure>
-			</article>
-			<article class="destacado">
-				<figure>
-					<div class="marco"><img src="fotos/9e6317e4-6eae-46ea-b2a5-0a90603fd7b9.webp" alt="MASAS SECAS" loading="lazy" width="380" height="380"></div>
-					<figcaption>
-						<h3>MASAS SECAS</h3>
-						<p>1 kg. surtido de masas secas.</p>
-					</figcaption>
-				</figure>
-			</article>
-			<article class="destacado">
-				<figure>
-					<div class="marco"><img src="fotos/241d215f-a412-4bbf-baaf-c50c2e1ca664.webp" alt="CHOCOTORTA XL" loading="lazy" width="380" height="380"></div>
-					<figcaption>
-						<h3>CHOCOTORTA XL</h3>
-						<p>8 Capas de Chocolinas con mezcla de crema de leche y dulce de leche</p>
-					</figcaption>
-				</figure>
-			</article>
-			</div>
-		</div>
-	</section>
+<section class="nosotras" id="nosotras">
+	<div class="nosotras-texto">
+		<p class="volanta">Nosotras</p>
+		<h2>Una cocina de casa, no una fábrica</h2>
+		<p>Todo se hace en cantidad chica, el día anterior o el mismo día. Por eso hay cosas que se encargan y otras que se avisan por Instagram cuando salen del horno.</p>
+		<p>Si querés algo que no esta en el catálogo, pregunta igual: casi siempre se puede.</p>
+		<a class="instagram" href="https://instagram.com/ladulceria.hechoencasa" target="_blank" rel="noopener">Ver el Instagram</a>
+	</div>
+</section>
 
 <section class="seccion catalogo" id="catalogo">
 	<div class="envoltorio">
 		<div class="seccion-titulo">
 			<div>
 				<p class="volanta">Catálogo</p>
-				<h2>Todo lo que sale del horno</h2>
+				<h2></h2>
 			</div>
-			<p>Los precios cambian seguido, así que se consultan por WhatsApp. Tocá el producto y te llega el mensaje ya escrito.</p>
+			<p></p>
 		</div>
 		<div class="controles">
 			<input id="buscador" type="search" placeholder="Buscar…" aria-label="Buscar en el catálogo" autocomplete="off">
@@ -628,7 +630,7 @@ dialog.confirmar:not([open]) { display: none; }
 			<button class="filtro" data-categoria="Tartas" aria-pressed="false">Tartas</button>
 			<button class="filtro" data-categoria="Tortas" aria-pressed="false">Tortas</button>
 		</div>
-		<div class="pedido" id="pedido" hidden data-telefono="5493515229937" data-generado="29/8/2026" data-publicacion="1788048911151" data-tope="20" data-desde="10:00" data-hasta="19:00" data-cerrados="" data-anticipacion="48">
+		<div class="pedido" id="pedido" hidden data-telefono="5493515229937" data-generado="11/9/2026" data-publicacion="1789130071985" data-tope="20" data-desde="10:00" data-hasta="19:00" data-cerrados="" data-anticipacion="48">
 		<div class="pedido-resumen">
 			<span class="pedido-total" id="pedido-total"></span>
 			<span class="visualmente-oculto" id="pedido-anuncio" aria-live="polite" aria-atomic="true"></span>
@@ -659,6 +661,15 @@ dialog.confirmar:not([open]) { display: none; }
 		<p class="pedido-nota" id="pedido-nota"></p>
 	</div>
 		<div class="grilla">
+			<article class="tarjeta" data-busqueda="AlFAJORES CHOCOLATE (6Pz) Alfajor relleno de dulce de leche con baño de chocolate." data-categoria="Box">
+				<img src="fotos/08889839-c56b-4b5d-b0ef-9d27b8084580.webp" alt="AlFAJORES CHOCOLATE (6Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>AlFAJORES CHOCOLATE (6Pz)</h2>
+					<p class="desc">Alfajor relleno de dulce de leche con baño de chocolate.</p>
+					<p class="precio">$ 8.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="08889839-c56b-4b5d-b0ef-9d27b8084580" data-precio="8000" data-nombre="AlFAJORES CHOCOLATE (6Pz)" aria-label="Agregar AlFAJORES CHOCOLATE (6Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20AlFAJORES%20CHOCOLATE%20(6Pz)" target="_blank" rel="noopener" aria-label="Consultar por AlFAJORES CHOCOLATE (6Pz) por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
 			<article class="tarjeta" data-busqueda="BOX ALFAJORES MIX (12 Pz) 6 alfajores con chip
 3 maicena 
 3 chocolate" data-categoria="Box">
@@ -668,53 +679,62 @@ dialog.confirmar:not([open]) { display: none; }
 					<p class="desc">6 alfajores con chip
 3 maicena 
 3 chocolate</p>
-					<p class="precio">$ 14.500,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="5b3454da-67fb-4da2-8520-ae2fa3532a72" data-precio="14500" data-nombre="BOX ALFAJORES MIX (12 Pz)" aria-label="Agregar BOX ALFAJORES MIX (12 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BOX%20ALFAJORES%20MIX%20(12%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por BOX ALFAJORES MIX (12 Pz) por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 12.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="5b3454da-67fb-4da2-8520-ae2fa3532a72" data-precio="12500" data-nombre="BOX ALFAJORES MIX (12 Pz)" aria-label="Agregar BOX ALFAJORES MIX (12 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BOX%20ALFAJORES%20MIX%20(12%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por BOX ALFAJORES MIX (12 Pz) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="BROWNIE OREO Brownie de chocolate con galletas Oreo." data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="BROWNIE OREO Brownie de chocolate  con dulce de leche y crema chantilly, con galletas Oreo." data-categoria="Tortas">
 				<img src="fotos/f72487d2-8162-4b32-9468-355097b1804d.webp" alt="BROWNIE OREO" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>BROWNIE OREO</h2>
-					<p class="desc">Brownie de chocolate con galletas Oreo.</p>
+					<p class="desc">Brownie de chocolate  con dulce de leche y crema chantilly, con galletas Oreo.</p>
 					<p class="precio">$ 36.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="f72487d2-8162-4b32-9468-355097b1804d" data-precio="36000" data-nombre="BROWNIE OREO" aria-label="Agregar BROWNIE OREO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BROWNIE%20OREO" target="_blank" rel="noopener" aria-label="Consultar por BROWNIE OREO por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
+			<article class="tarjeta" data-busqueda="BUDIN CARROT Bud?n de zanahoria con nueces, con frosting de queso crema y nuez">
+				<img src="fotos/c447dcc5-de10-4c8e-bb0a-15263f3016e4.webp" alt="BUDIN CARROT" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>BUDIN CARROT</h2>
+					<p class="desc">Bud?n de zanahoria con nueces, con frosting de queso crema y nuez</p>
+					<p class="precio">$ 8.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="c447dcc5-de10-4c8e-bb0a-15263f3016e4" data-precio="8000" data-nombre="BUDIN CARROT" aria-label="Agregar BUDIN CARROT al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20CARROT" target="_blank" rel="noopener" aria-label="Consultar por BUDIN CARROT por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
 			<article class="tarjeta" data-busqueda="BUDIN DE CHOCOLATE Budin de chocolate con cobertura de ganache de chocolate semiamargo" data-categoria="Budines">
-				
+				<img src="fotos/18a091f9-5ba5-49eb-b736-18bdd11a89b6.webp" alt="BUDIN DE CHOCOLATE" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>BUDIN DE CHOCOLATE</h2>
 					<p class="desc">Budin de chocolate con cobertura de ganache de chocolate semiamargo</p>
-					<p class="precio">$ 10.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="18a091f9-5ba5-49eb-b736-18bdd11a89b6" data-precio="10000" data-nombre="BUDIN DE CHOCOLATE" aria-label="Agregar BUDIN DE CHOCOLATE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20DE%20CHOCOLATE" target="_blank" rel="noopener" aria-label="Consultar por BUDIN DE CHOCOLATE por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 12.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="18a091f9-5ba5-49eb-b736-18bdd11a89b6" data-precio="12000" data-nombre="BUDIN DE CHOCOLATE" aria-label="Agregar BUDIN DE CHOCOLATE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20DE%20CHOCOLATE" target="_blank" rel="noopener" aria-label="Consultar por BUDIN DE CHOCOLATE por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="BUDIN MANDARINA Budín de mandarina, húmedo y con aroma cítrico." data-categoria="Budines">
-				
+			<article class="tarjeta" data-busqueda="BUDIN MANDARINA Bud?n húmedo de mandarina con un glaseado cítrico" data-categoria="Budines">
+				<img src="fotos/77935e66-af90-41e2-9447-74a32319fdd1.webp" alt="BUDIN MANDARINA" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>BUDIN MANDARINA</h2>
-					<p class="desc">Budín de mandarina, húmedo y con aroma cítrico.</p>
-					<p class="precio">$ 6.500,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="77935e66-af90-41e2-9447-74a32319fdd1" data-precio="6500" data-nombre="BUDIN MANDARINA" aria-label="Agregar BUDIN MANDARINA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MANDARINA" target="_blank" rel="noopener" aria-label="Consultar por BUDIN MANDARINA por WhatsApp">Consultar</a></div>
+					<p class="desc">Bud?n húmedo de mandarina con un glaseado cítrico</p>
+					<p class="precio">$ 7.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="77935e66-af90-41e2-9447-74a32319fdd1" data-precio="7500" data-nombre="BUDIN MANDARINA" aria-label="Agregar BUDIN MANDARINA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MANDARINA" target="_blank" rel="noopener" aria-label="Consultar por BUDIN MANDARINA por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="BUDIN MARMOLADO Budín marmolado de vainilla y chocolate." data-categoria="Budines">
-				
+			<article class="tarjeta" data-busqueda="BUDIN MARMOLADO Bud?n marmolado de vainilla y chocolate." data-categoria="Budines">
+				<img src="fotos/9de98c9c-235f-4c90-b858-0b0a7474f69f.webp" alt="BUDIN MARMOLADO" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>BUDIN MARMOLADO</h2>
-					<p class="desc">Budín marmolado de vainilla y chocolate.</p>
+					<p class="desc">Bud?n marmolado de vainilla y chocolate.</p>
 					<p class="precio">$ 13.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="9de98c9c-235f-4c90-b858-0b0a7474f69f" data-precio="13000" data-nombre="BUDIN MARMOLADO" aria-label="Agregar BUDIN MARMOLADO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20BUDIN%20MARMOLADO" target="_blank" rel="noopener" aria-label="Consultar por BUDIN MARMOLADO por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="CARROT CAKE Bizcochuelo de zanahoria con frosting de queso crema (22cm)" data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="CARROT CAKE Bizcochuelo de zanahoria con un corte de  frosting de queso crema (20cm)" data-categoria="Tortas">
 				<img src="fotos/f7665f47-87c8-460f-8c2f-4f2a3728d4fe.webp" alt="CARROT CAKE" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>CARROT CAKE</h2>
-					<p class="desc">Bizcochuelo de zanahoria con frosting de queso crema (22cm)</p>
-					<p class="precio">$ 24.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="f7665f47-87c8-460f-8c2f-4f2a3728d4fe" data-precio="24000" data-nombre="CARROT CAKE" aria-label="Agregar CARROT CAKE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CARROT%20CAKE" target="_blank" rel="noopener" aria-label="Consultar por CARROT CAKE por WhatsApp">Consultar</a></div>
+					<p class="desc">Bizcochuelo de zanahoria con un corte de  frosting de queso crema (20cm)</p>
+					<p class="precio">$ 25.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="f7665f47-87c8-460f-8c2f-4f2a3728d4fe" data-precio="25000" data-nombre="CARROT CAKE" aria-label="Agregar CARROT CAKE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CARROT%20CAKE" target="_blank" rel="noopener" aria-label="Consultar por CARROT CAKE por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
 			<article class="tarjeta" data-busqueda="CHOCOTORTA 4 capas de Chocolinas, con mezcla de dulce de leche y crema. " data-categoria="Tortas">
@@ -735,40 +755,58 @@ dialog.confirmar:not([open]) { display: none; }
 					<div class="acciones"><button type="button" class="accion agregar" data-id="241d215f-a412-4bbf-baaf-c50c2e1ca664" data-precio="53000" data-nombre="CHOCOTORTA XL" aria-label="Agregar CHOCOTORTA XL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CHOCOTORTA%20XL" target="_blank" rel="noopener" aria-label="Consultar por CHOCOTORTA XL por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
+			<article class="tarjeta" data-busqueda="CUPCAKE CHOCOLATE (6Pz) Mufins sabor chocolate con deco de crema chantilly o ganache de chocolate." data-categoria="Box">
+				<img src="fotos/2b8129da-fb53-4ef7-b395-e63fe059fb52.webp" alt="CUPCAKE CHOCOLATE (6Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CUPCAKE CHOCOLATE (6Pz)</h2>
+					<p class="desc">Mufins sabor chocolate con deco de crema chantilly o ganache de chocolate.</p>
+					<p class="precio">$ 11.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="2b8129da-fb53-4ef7-b395-e63fe059fb52" data-precio="11500" data-nombre="CUPCAKE CHOCOLATE (6Pz)" aria-label="Agregar CUPCAKE CHOCOLATE (6Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKE%20CHOCOLATE%20(6Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKE CHOCOLATE (6Pz) por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
+			<article class="tarjeta" data-busqueda="CUPCAKES CARROT  (6Pz) Mufins de zanahoria con frosting de queso crema">
+				<img src="fotos/6826f590-3a68-4946-935a-579ad2066ea6.webp" alt="CUPCAKES CARROT  (6Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>CUPCAKES CARROT  (6Pz)</h2>
+					<p class="desc">Mufins de zanahoria con frosting de queso crema</p>
+					<p class="precio">$ 12.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="6826f590-3a68-4946-935a-579ad2066ea6" data-precio="12500" data-nombre="CUPCAKES CARROT  (6Pz)" aria-label="Agregar CUPCAKES CARROT  (6Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20CARROT%20%20(6Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES CARROT  (6Pz) por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
 			<article class="tarjeta" data-busqueda="CUPCAKES RED VELVET (6 Pz) Muffins de red velvet con frosting de queso crema" data-categoria="Box">
 				<img src="fotos/49c15242-517d-4d00-87ce-313d87f7aeda.webp" alt="CUPCAKES RED VELVET (6 Pz)" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>CUPCAKES RED VELVET (6 Pz)</h2>
 					<p class="desc">Muffins de red velvet con frosting de queso crema</p>
-					<p class="precio">$ 13.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="49c15242-517d-4d00-87ce-313d87f7aeda" data-precio="13000" data-nombre="CUPCAKES RED VELVET (6 Pz)" aria-label="Agregar CUPCAKES RED VELVET (6 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20RED%20VELVET%20(6%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES RED VELVET (6 Pz) por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 12.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="49c15242-517d-4d00-87ce-313d87f7aeda" data-precio="12500" data-nombre="CUPCAKES RED VELVET (6 Pz)" aria-label="Agregar CUPCAKES RED VELVET (6 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20RED%20VELVET%20(6%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES RED VELVET (6 Pz) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="CUPCAKES VAINILLA (3 Pz) Muffins de vainilla con deco de crema chantilly.
+			<article class="tarjeta" data-busqueda="CUPCAKES VAINILLA (6 Pz) Muffins de vainilla con deco de crema chantilly.
 " data-categoria="Box">
-				<img src="fotos/fad1410d-4696-494c-98f1-7122cb114283.webp" alt="CUPCAKES VAINILLA (3 Pz)" loading="lazy" width="400" height="400">
+				<img src="fotos/fad1410d-4696-494c-98f1-7122cb114283.webp" alt="CUPCAKES VAINILLA (6 Pz)" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
-					<h2>CUPCAKES VAINILLA (3 Pz)</h2>
+					<h2>CUPCAKES VAINILLA (6 Pz)</h2>
 					<p class="desc">Muffins de vainilla con deco de crema chantilly.
 </p>
-					<p class="precio">$ 6.250,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="fad1410d-4696-494c-98f1-7122cb114283" data-precio="6250" data-nombre="CUPCAKES VAINILLA (3 Pz)" aria-label="Agregar CUPCAKES VAINILLA (3 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20VAINILLA%20(3%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES VAINILLA (3 Pz) por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 10.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="fad1410d-4696-494c-98f1-7122cb114283" data-precio="10000" data-nombre="CUPCAKES VAINILLA (6 Pz)" aria-label="Agregar CUPCAKES VAINILLA (6 Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20CUPCAKES%20VAINILLA%20(6%20Pz)" target="_blank" rel="noopener" aria-label="Consultar por CUPCAKES VAINILLA (6 Pz) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="LEMON PIE Base de masa dulce , crema de limón y merengue italiano" data-categoria="Tartas">
+			<article class="tarjeta" data-busqueda="LEMON PIE Base de masa dulce , crema de lim?n y merengue italiano" data-categoria="Tartas">
 				<img src="fotos/7d0ae655-fde5-4b76-8ec7-990e187e54e1.webp" alt="LEMON PIE" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>LEMON PIE</h2>
-					<p class="desc">Base de masa dulce , crema de limón y merengue italiano</p>
-					<p class="precio">$ 28.500,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="7d0ae655-fde5-4b76-8ec7-990e187e54e1" data-precio="28500" data-nombre="LEMON PIE" aria-label="Agregar LEMON PIE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20LEMON%20PIE" target="_blank" rel="noopener" aria-label="Consultar por LEMON PIE por WhatsApp">Consultar</a></div>
+					<p class="desc">Base de masa dulce , crema de lim?n y merengue italiano</p>
+					<p class="precio">$ 29.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="7d0ae655-fde5-4b76-8ec7-990e187e54e1" data-precio="29000" data-nombre="LEMON PIE" aria-label="Agregar LEMON PIE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20LEMON%20PIE" target="_blank" rel="noopener" aria-label="Consultar por LEMON PIE por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="MARQUISE Brownie de chocolate húmedo con dulce de leche y crema chantilly (22cm)" data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="MARQUISE Brownie de chocolate h?medo con dulce de leche y crema chantilly (22cm)" data-categoria="Tortas">
 				<img src="fotos/a8fcd9bd-dfa4-43c2-bb80-a0708ba89084.webp" alt="MARQUISE" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>MARQUISE</h2>
-					<p class="desc">Brownie de chocolate húmedo con dulce de leche y crema chantilly (22cm)</p>
+					<p class="desc">Brownie de chocolate h?medo con dulce de leche y crema chantilly (22cm)</p>
 					<p class="precio">$ 30.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="a8fcd9bd-dfa4-43c2-bb80-a0708ba89084" data-precio="30000" data-nombre="MARQUISE" aria-label="Agregar MARQUISE al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE" target="_blank" rel="noopener" aria-label="Consultar por MARQUISE por WhatsApp">Consultar</a></div>
 				</div>
@@ -778,8 +816,8 @@ dialog.confirmar:not([open]) { display: none; }
 				<div class="cuerpo">
 					<h2>MARQUISE (GLUTEN FREE)</h2>
 					<p class="desc">Brownie de chocolate sin harina, con dulce de leche y crema chantilly. (22cm)</p>
-					<p class="precio">$ 28.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="6b7ab0f5-e3a0-4baf-a036-3d7c77449dfb" data-precio="28000" data-nombre="MARQUISE (GLUTEN FREE)" aria-label="Agregar MARQUISE (GLUTEN FREE) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE%20(GLUTEN%20FREE)" target="_blank" rel="noopener" aria-label="Consultar por MARQUISE (GLUTEN FREE) por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 29.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="6b7ab0f5-e3a0-4baf-a036-3d7c77449dfb" data-precio="29000" data-nombre="MARQUISE (GLUTEN FREE)" aria-label="Agregar MARQUISE (GLUTEN FREE) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MARQUISE%20(GLUTEN%20FREE)" target="_blank" rel="noopener" aria-label="Consultar por MARQUISE (GLUTEN FREE) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
 			<article class="tarjeta" data-busqueda="MASAS SECAS 1 kg. surtido de masas secas.">
@@ -787,24 +825,24 @@ dialog.confirmar:not([open]) { display: none; }
 				<div class="cuerpo">
 					<h2>MASAS SECAS</h2>
 					<p class="desc">1 kg. surtido de masas secas.</p>
-					<p class="precio">$ 30.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="9e6317e4-6eae-46ea-b2a5-0a90603fd7b9" data-precio="30000" data-nombre="MASAS SECAS" aria-label="Agregar MASAS SECAS al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MASAS%20SECAS" target="_blank" rel="noopener" aria-label="Consultar por MASAS SECAS por WhatsApp">Consultar</a></div>
+					<p class="precio">$ 31.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="9e6317e4-6eae-46ea-b2a5-0a90603fd7b9" data-precio="31000" data-nombre="MASAS SECAS" aria-label="Agregar MASAS SECAS al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20MASAS%20SECAS" target="_blank" rel="noopener" aria-label="Consultar por MASAS SECAS por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="PAVLOVA Base de merengue, dulce de leche,  crema Chantilly y frutos rojos  (22 cm)" data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="PAVLOVA Base de merengue, dulce de leche,  crema Chantilly y frutas de estación   (22 cm)" data-categoria="Tortas">
 				<img src="fotos/680a0cd9-5f6e-449e-971e-1a2186a83e9f.webp" alt="PAVLOVA" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>PAVLOVA</h2>
-					<p class="desc">Base de merengue, dulce de leche,  crema Chantilly y frutos rojos  (22 cm)</p>
-					<p class="precio">$ 37.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="680a0cd9-5f6e-449e-971e-1a2186a83e9f" data-precio="37000" data-nombre="PAVLOVA" aria-label="Agregar PAVLOVA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PAVLOVA" target="_blank" rel="noopener" aria-label="Consultar por PAVLOVA por WhatsApp">Consultar</a></div>
+					<p class="desc">Base de merengue, dulce de leche,  crema Chantilly y frutas de estación   (22 cm)</p>
+					<p class="precio">$ 39.000,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="680a0cd9-5f6e-449e-971e-1a2186a83e9f" data-precio="39000" data-nombre="PAVLOVA" aria-label="Agregar PAVLOVA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20PAVLOVA" target="_blank" rel="noopener" aria-label="Consultar por PAVLOVA por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="ROGEL 10 discos de masa, dulce de leche y merengue italiano" data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="ROGEL 10 discos de masa rellenos con dulce de leche y cubierta de merengue italiano" data-categoria="Tortas">
 				<img src="fotos/e6c67e74-658c-4ee7-8c3f-2ce14d53c72a.webp" alt="ROGEL" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>ROGEL</h2>
-					<p class="desc">10 discos de masa, dulce de leche y merengue italiano</p>
+					<p class="desc">10 discos de masa rellenos con dulce de leche y cubierta de merengue italiano</p>
 					<p class="precio">$ 37.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="e6c67e74-658c-4ee7-8c3f-2ce14d53c72a" data-precio="37000" data-nombre="ROGEL" aria-label="Agregar ROGEL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20ROGEL" target="_blank" rel="noopener" aria-label="Consultar por ROGEL por WhatsApp">Consultar</a></div>
 				</div>
@@ -854,80 +892,84 @@ dialog.confirmar:not([open]) { display: none; }
 					<div class="acciones"><button type="button" class="accion agregar" data-id="a61f086e-a3a3-4bc4-95e7-8523dfd9d629" data-precio="24500" data-nombre="TARTA DE MANZANA/PERA" aria-label="Agregar TARTA DE MANZANA/PERA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TARTA%20DE%20MANZANA%2FPERA" target="_blank" rel="noopener" aria-label="Consultar por TARTA DE MANZANA/PERA por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TIRAMISU Base de vainillas ,  embebidas en almibar de café y crema de mascarpone.">
+			<article class="tarjeta" data-busqueda="TIRAMISU Base de vainillas ,  embebidas en almibar de caf? y crema de mascarpone.">
 				<img src="fotos/1078de54-6586-4e78-b44d-048fba454678.webp" alt="TIRAMISU" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TIRAMISU</h2>
-					<p class="desc">Base de vainillas ,  embebidas en almibar de café y crema de mascarpone.</p>
+					<p class="desc">Base de vainillas ,  embebidas en almibar de caf? y crema de mascarpone.</p>
 					<p class="precio">$ 28.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="1078de54-6586-4e78-b44d-048fba454678" data-precio="28000" data-nombre="TIRAMISU" aria-label="Agregar TIRAMISU al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU" target="_blank" rel="noopener" aria-label="Consultar por TIRAMISU por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TIRAMISU XL Base de vainillas, embebidas en almíbar de café y relleno de crema mascarpone.">
+			<article class="tarjeta" data-busqueda="TIRAMISU XL Base de vainillas, embebidas en alm?bar de caf? y relleno de crema mascarpone.">
 				<img src="fotos/26256176-b997-4fe8-ab4e-020cda39ce2d.webp" alt="TIRAMISU XL" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TIRAMISU XL</h2>
-					<p class="desc">Base de vainillas, embebidas en almíbar de café y relleno de crema mascarpone.</p>
+					<p class="desc">Base de vainillas, embebidas en alm?bar de caf? y relleno de crema mascarpone.</p>
 					<p class="precio">$ 39.500,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="26256176-b997-4fe8-ab4e-020cda39ce2d" data-precio="39500" data-nombre="TIRAMISU XL" aria-label="Agregar TIRAMISU XL al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TIRAMISU%20XL" target="_blank" rel="noopener" aria-label="Consultar por TIRAMISU XL por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TORTA BLACK Base húmeda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
+			<article class="tarjeta" data-busqueda="TORTA BLACK Base h?meda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
 " data-categoria="Tortas">
 				<img src="fotos/0136d497-a7c9-4903-9b41-041347911360.webp" alt="TORTA BLACK" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TORTA BLACK</h2>
-					<p class="desc">Base húmeda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
+					<p class="desc">Base h?meda de bizcochuelo de vainilla o chocolate con 2 cortes, uno de crema bariloche y otro de crema con frutillas, decorado con crema de chocolate y frutillas  (20cm)
 </p>
 					<p class="precio">$ 46.500,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="0136d497-a7c9-4903-9b41-041347911360" data-precio="46500" data-nombre="TORTA BLACK" aria-label="Agregar TORTA BLACK al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20BLACK" target="_blank" rel="noopener" aria-label="Consultar por TORTA BLACK por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TORTA CLASICA Bizcochuelo de vainilla húmedo , con dos cortes de relleno, uno de crema bariloche y otro de crema. Decorado con crema." data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="TORTA CLASICA Bizcochuelo de vainilla h?medo , con dos cortes de relleno, uno de crema bariloche y otro de crema chantilly. Decorado con crema chantilly." data-categoria="Tortas">
 				<img src="fotos/27f5c82f-b2ff-4612-a167-e7d2e18e4549.webp" alt="TORTA CLASICA" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TORTA CLASICA</h2>
-					<p class="desc">Bizcochuelo de vainilla húmedo , con dos cortes de relleno, uno de crema bariloche y otro de crema. Decorado con crema.</p>
+					<p class="desc">Bizcochuelo de vainilla h?medo , con dos cortes de relleno, uno de crema bariloche y otro de crema chantilly. Decorado con crema chantilly.</p>
 					<p class="precio">$ 35.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="27f5c82f-b2ff-4612-a167-e7d2e18e4549" data-precio="35000" data-nombre="TORTA CLASICA" aria-label="Agregar TORTA CLASICA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20CLASICA" target="_blank" rel="noopener" aria-label="Consultar por TORTA CLASICA por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TORTA CUMPLEAÑERA Bizcochuelo húmedo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elección) y el otro con crema con (frutilla o durazno, a elección).
+			<article class="tarjeta" data-busqueda="TORTA CUMPLEA?ERA Bizcochuelo h?medo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elecci?n) y el otro con crema chantilly con (frutilla o durazno, a elecci?n).
 Decorada con crema " data-categoria="Tortas">
-				<img src="fotos/0819f294-07bf-420b-97aa-fa5212dd7249.webp" alt="TORTA CUMPLEAÑERA" loading="lazy" width="400" height="400">
+				<img src="fotos/0819f294-07bf-420b-97aa-fa5212dd7249.webp" alt="TORTA CUMPLEA?ERA" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
-					<h2>TORTA CUMPLEAÑERA</h2>
-					<p class="desc">Bizcochuelo húmedo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elección) y el otro con crema con (frutilla o durazno, a elección).
+					<h2>TORTA CUMPLEA?ERA</h2>
+					<p class="desc">Bizcochuelo h?medo de vainilla, con dos cortes, uno de dulce de leche con (merenguitos o nuez, a elecci?n) y el otro con crema chantilly con (frutilla o durazno, a elecci?n).
 Decorada con crema </p>
 					<p class="precio">$ 38.000,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="0819f294-07bf-420b-97aa-fa5212dd7249" data-precio="38000" data-nombre="TORTA CUMPLEAÑERA" aria-label="Agregar TORTA CUMPLEAÑERA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20CUMPLEA%C3%91ERA" target="_blank" rel="noopener" aria-label="Consultar por TORTA CUMPLEAÑERA por WhatsApp">Consultar</a></div>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="0819f294-07bf-420b-97aa-fa5212dd7249" data-precio="38000" data-nombre="TORTA CUMPLEA?ERA" aria-label="Agregar TORTA CUMPLEA?ERA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20CUMPLEA%3FERA" target="_blank" rel="noopener" aria-label="Consultar por TORTA CUMPLEA?ERA por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TORTA DE NUEZ (GLUTEN FREE) Base de nuez suave y húmeda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces." data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="TORTA DE NUEZ (GLUTEN FREE) Base de nuez suave y h?meda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces." data-categoria="Tortas">
 				<img src="fotos/f634b567-ff79-4f48-b13f-25071c131e3e.webp" alt="TORTA DE NUEZ (GLUTEN FREE)" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TORTA DE NUEZ (GLUTEN FREE)</h2>
-					<p class="desc">Base de nuez suave y húmeda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces.</p>
+					<p class="desc">Base de nuez suave y h?meda rellena con dulce de leche decorada con crema chantilly, ralladura de chocolate blanco y nueces.</p>
 					<p class="precio">$ 23.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="f634b567-ff79-4f48-b13f-25071c131e3e" data-precio="23000" data-nombre="TORTA DE NUEZ (GLUTEN FREE)" aria-label="Agregar TORTA DE NUEZ (GLUTEN FREE) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20DE%20NUEZ%20(GLUTEN%20FREE)" target="_blank" rel="noopener" aria-label="Consultar por TORTA DE NUEZ (GLUTEN FREE) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
-			<article class="tarjeta" data-busqueda="TORTA MATERA DE ZANAHORIA SIN HARINA Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten." data-categoria="Tortas">
-				
-				<div class="cuerpo">
-					<h2>TORTA MATERA DE ZANAHORIA SIN HARINA</h2>
-					<p class="desc">Torta de zanahoria sin harina, para acompañar los mates. Apta sin gluten.</p>
-					<p class="precio">$ 9.500,00</p>
-					<div class="acciones"><button type="button" class="accion agregar" data-id="675ed20d-fcd2-431a-ac98-e3330ef03ea7" data-precio="9500" data-nombre="TORTA MATERA DE ZANAHORIA SIN HARINA" aria-label="Agregar TORTA MATERA DE ZANAHORIA SIN HARINA al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20MATERA%20DE%20ZANAHORIA%20SIN%20HARINA" target="_blank" rel="noopener" aria-label="Consultar por TORTA MATERA DE ZANAHORIA SIN HARINA por WhatsApp">Consultar</a></div>
-				</div>
-			</article>
-			<article class="tarjeta" data-busqueda="TORTA PIONONO Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elección), decorado con crema chantilly. (TIPO CHAJA)" data-categoria="Tortas">
+			<article class="tarjeta" data-busqueda="TORTA PIONONO Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elecci?n), decorado con crema chantilly. (TIPO CHAJA)" data-categoria="Tortas">
 				<img src="fotos/76aed50e-234e-4ed2-8eec-c771120dc08c.webp" alt="TORTA PIONONO" loading="lazy" width="400" height="400">
 				<div class="cuerpo">
 					<h2>TORTA PIONONO</h2>
-					<p class="desc">Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elección), decorado con crema chantilly. (TIPO CHAJA)</p>
+					<p class="desc">Base de pionono con un relleno de dulce de leche y nuez y otro de crema con (durazno o merengue, a elecci?n), decorado con crema chantilly. (TIPO CHAJA)</p>
 					<p class="precio">$ 31.000,00</p>
 					<div class="acciones"><button type="button" class="accion agregar" data-id="76aed50e-234e-4ed2-8eec-c771120dc08c" data-precio="31000" data-nombre="TORTA PIONONO" aria-label="Agregar TORTA PIONONO al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20TORTA%20PIONONO" target="_blank" rel="noopener" aria-label="Consultar por TORTA PIONONO por WhatsApp">Consultar</a></div>
+				</div>
+			</article>
+			<article class="tarjeta" data-busqueda="VASO ALFAJORES MINI (9Pz) 3 Alfajores de maicena o nuez
+3 alfajores de chocolate
+3 alfajores con chip" data-categoria="Box">
+				<img src="fotos/bf6dabea-8033-441f-b829-3aebe3939d57.webp" alt="VASO ALFAJORES MINI (9Pz)" loading="lazy" width="400" height="400">
+				<div class="cuerpo">
+					<h2>VASO ALFAJORES MINI (9Pz)</h2>
+					<p class="desc">3 Alfajores de maicena o nuez
+3 alfajores de chocolate
+3 alfajores con chip</p>
+					<p class="precio">$ 7.500,00</p>
+					<div class="acciones"><button type="button" class="accion agregar" data-id="bf6dabea-8033-441f-b829-3aebe3939d57" data-precio="7500" data-nombre="VASO ALFAJORES MINI (9Pz)" aria-label="Agregar VASO ALFAJORES MINI (9Pz) al pedido">Agregar</button><a class="accion consultar" href="https://wa.me/5493515229937?text=%C2%A1Hola!%20Quer%C3%ADa%20consultar%20por%3A%20VASO%20ALFAJORES%20MINI%20(9Pz)" target="_blank" rel="noopener" aria-label="Consultar por VASO ALFAJORES MINI (9Pz) por WhatsApp">Consultar</a></div>
 				</div>
 			</article>
 		</div>
@@ -947,8 +989,8 @@ Decorada con crema </p>
 			<div class="paso">
 					<span class="numero">01</span>
 					<div>
-						<h3>Escribinos qué necesitás</h3>
-						<p>Ocasión, cantidad de porciones y fecha. Si no sabés qué elegir, te sugerimos.</p>
+						<h3>Escribinos qué necesitas</h3>
+						<p>Ocasión, cantidad de porciones y fecha. Si no sabes que elegir, te sugerimos.</p>
 					</div>
 				</div>
 				<div class="paso">
@@ -961,22 +1003,11 @@ Decorada con crema </p>
 				<div class="paso">
 					<span class="numero">03</span>
 					<div>
-						<h3>Retirás o te lo llevamos</h3>
-						<p>Retiro en el barrio o envío a coordinar dentro de Córdoba capital.</p>
+						<h3>Retiras o te lo llevamos</h3>
+						<p>Retiro en el barrio o envío a coordinar dentro de Córdoba Capital.</p>
 					</div>
 				</div>
 		</div>
-	</div>
-</section>
-
-<section class="nosotras" id="nosotras">
-	<div class="nosotras-foto"></div>
-	<div class="nosotras-texto">
-		<p class="volanta">Nosotras</p>
-		<h2>Una cocina de casa, no una fábrica</h2>
-		<p>Todo se hace en cantidad chica, el día anterior o el mismo día. Por eso hay cosas que se encargan y otras que se avisan por Instagram cuando salen del horno.</p>
-		<p>Si querés algo que no está en el catálogo, preguntá igual: casi siempre se puede.</p>
-		<a class="instagram" href="https://instagram.com/ladulceria.hechoencasa" target="_blank" rel="noopener">Ver el Instagram</a>
 	</div>
 </section>
 
@@ -998,7 +1029,7 @@ Decorada con crema </p>
 				<p>Encargos: 48 h de anticipación</p>
 			</div>
 		</div>
-		<p class="legal">Precios actualizados al 29/8/2026</p>
+		<p class="legal">Precios actualizados al 11/9/2026</p>
 	</div>
 </footer>
 
